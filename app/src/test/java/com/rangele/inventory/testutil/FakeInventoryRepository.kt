@@ -7,6 +7,7 @@ import com.rangele.inventory.util.ProductNameMatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import kotlin.math.max
 
 /** In-memory stand-in for [InventoryRepository], used to unit test ViewModels without Room. */
 class FakeInventoryRepository(
@@ -56,14 +57,15 @@ class FakeInventoryRepository(
         productId: Long,
         quantity: Double,
     ) {
-        replace(productId) { it.copy(quantity = quantity) }
+        replace(productId) { it.copy(quantity = max(0.0, quantity)) }
     }
 
     override suspend fun adjustQuantity(
         productId: Long,
         delta: Double,
     ) {
-        replace(productId) { it.copy(quantity = it.quantity + delta) }
+        val existing = getById(productId) ?: return
+        setQuantity(productId, existing.quantity + delta)
     }
 
     override suspend fun deleteProduct(productId: Long) {
