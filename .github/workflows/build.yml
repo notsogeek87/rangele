@@ -7,7 +7,7 @@ on:
       - main
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -69,6 +69,32 @@ jobs:
           name: inventaire-placard-main-${{ steps.sha.outputs.value }}
           path: artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk
           if-no-files-found: error
+
+      - name: Publish staging release (latest build)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: staging-latest
+          name: "Staging (dernier build)"
+          prerelease: true
+          make_latest: false
+          files: artifact/inventaire-placard-staging-${{ steps.sha.outputs.value }}.apk
+          body: |
+            Build automatique depuis le commit `${{ steps.sha.outputs.value }}` (branche `${{ github.ref_name }}`).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Publish main release (latest build)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: main-latest
+          name: "Main (dernier build)"
+          prerelease: false
+          make_latest: true
+          files: artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk
+          body: |
+            Build automatique depuis le commit `${{ steps.sha.outputs.value }}` (branche `${{ github.ref_name }}`).
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload test and lint reports
         if: always()

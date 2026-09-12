@@ -45,9 +45,16 @@ dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore.
 debug, les variants release ne sont ni testés ni construits en CI). Grâce aux flavors Gradle
 `staging`/`production` (voir Architecture),
 un seul run produit et publie **deux** APK debug à chaque fois, quelle que soit la branche qui a
-déclenché le build : `inventaire-placard-staging-<sha court>` et `inventaire-placard-main-<sha
-court>` (le flavor `production` est renommé `main` uniquement dans le nom de l'artifact CI).
-Les rapports de tests/lint sont aussi publiés en artifact.
+déclenché le build (le flavor `production` est renommé `main` uniquement dans le nom des
+artifacts/releases CI). Deux façons de les récupérer :
+- **Releases GitHub** (page "Releases" du repo) — deux releases "flottantes" `staging-latest` et
+  `main-latest`, dont l'APK est remplacé à chaque nouveau push. C'est l'endroit à privilégier pour
+  télécharger le dernier build.
+- **Artifacts du run** (onglet Actions → run concerné → bas de page) — une copie horodatée par
+  commit, nommée `inventaire-placard-staging-<sha court>` / `inventaire-placard-main-<sha court>`,
+  utile pour retrouver un build précis. Expire au bout de 90 jours (défaut GitHub Actions).
+
+Les rapports de tests/lint sont aussi publiés en artifact (pas en release).
 
 ## Architecture
 

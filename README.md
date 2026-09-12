@@ -43,5 +43,11 @@ identité cohérente dans toute l'app.
 
 Le pipeline `.github/workflows/build.yml` exécute ces trois étapes sur chaque push vers
 `staging`/`main`. Le module a deux product flavors (`staging` et `production`, ce dernier
-correspondant à `main`), donc chaque run publie les deux APK debug en artifacts, quelle que
-soit la branche à l'origine du push (nom incluant l'environnement et le hash de commit court).
+correspondant à `main`), donc chaque run publie les deux APK debug, quelle que soit la branche
+à l'origine du push.
+
+**Où récupérer les APK :**
+- Onglet **Releases** du repo → `staging-latest` / `main-latest` : toujours le dernier build,
+  c'est la page à utiliser pour télécharger l'APK.
+- Onglet **Actions** → un run → artifacts en bas de page : copie horodatée par commit
+  (`inventaire-placard-<env>-<sha court>`), expire au bout de 90 jours.
