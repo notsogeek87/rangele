@@ -22,17 +22,17 @@ Compose (inventaire, ajout, scan/vérification de ticket) et thème Kawaii Paste
 ## Commands
 
 ```
-./gradlew ktlintCheck        # lint Kotlin (ktlint 1.3.1, échoue le build si violations)
-./gradlew ktlintFormat       # auto-fix des violations ktlint
-./gradlew test               # tests unitaires (toutes variantes)
-./gradlew testDebugUnitTest  # tests unitaires, variante debug (celle utilisée en CI)
-./gradlew assembleDebug      # build de l'APK debug
+./gradlew ktlintCheck              # lint Kotlin (ktlint 1.3.1, échoue le build si violations)
+./gradlew ktlintFormat              # auto-fix des violations ktlint
+./gradlew test                      # tests unitaires (staging + production)
+./gradlew testStagingDebugUnitTest  # tests unitaires, un seul variant
+./gradlew assembleDebug             # build des deux APK debug (staging + production)
 ```
 
 Pour lancer un seul test unitaire :
 ```
-./gradlew testDebugUnitTest --tests "com.rangele.inventory.SomeClassTest"
-./gradlew testDebugUnitTest --tests "com.rangele.inventory.SomeClassTest.someMethod"
+./gradlew testStagingDebugUnitTest --tests "com.rangele.inventory.SomeClassTest"
+./gradlew testStagingDebugUnitTest --tests "com.rangele.inventory.SomeClassTest.someMethod"
 ```
 
 Il n'y a pas de tests instrumentés (androidTest) au-delà de la dépendance `ui-test-junit4` déclarée
@@ -41,8 +41,11 @@ dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore.
 ## CI
 
 `.github/workflows/build.yml` s'exécute sur chaque push vers `staging`/`main` : `ktlintCheck` →
-`testDebugUnitTest` → `assembleDebug`, puis publie l'APK debug en artifact (nommé
-`inventaire-placard-<branche>-<sha court>`) ainsi que les rapports de tests/lint.
+`test` → `assembleDebug`. Grâce aux flavors Gradle `staging`/`production` (voir Architecture),
+un seul run produit et publie **deux** APK debug à chaque fois, quelle que soit la branche qui a
+déclenché le build : `inventaire-placard-staging-<sha court>` et `inventaire-placard-main-<sha
+court>` (le flavor `production` est renommé `main` uniquement dans le nom de l'artifact CI).
+Les rapports de tests/lint sont aussi publiés en artifact.
 
 ## Architecture
 
@@ -60,6 +63,11 @@ Points de configuration Gradle notables :
 - Versions et coordonnées de dépendances centralisées dans `gradle/libs.versions.toml` (version
   catalog) — ajouter toute nouvelle dépendance là plutôt qu'en dur dans `app/build.gradle.kts`.
 - Le build type `debug` a un `applicationIdSuffix = ".debug"` pour cohabiter avec une install release.
+- Deux product flavors sur la dimension `env` : `staging` (`applicationIdSuffix = ".staging"`,
+  nom d'app "Yakwa Staging") et `production` (identité par défaut, pas de suffixe). Le nom
+  `production` est utilisé plutôt que `main` pour éviter la collision avec le source set réservé
+  `main` de Gradle/AGP ; c'est bien ce flavor qui correspond à la branche `main`. Les deux variants
+  debug (`stagingDebug`/`productionDebug`) peuvent être installés simultanément sur le même appareil.
 - CameraX (`camera-core`, `camera2`, `camera-lifecycle`, `camera-view`) est utilisé pour la capture
   photo du ticket ; la permission `CAMERA` est déclarée dans le manifest avec
   `android:required="false"` sur la feature caméra.

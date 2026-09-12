@@ -42,5 +42,6 @@ identité cohérente dans toute l'app.
 ```
 
 Le pipeline `.github/workflows/build.yml` exécute ces trois étapes sur chaque push vers
-`staging`/`main` et publie l'APK debug en artifact (nom incluant la branche et le hash de
-commit court).
+`staging`/`main`. Le module a deux product flavors (`staging` et `production`, ce dernier
+correspondant à `main`), donc chaque run publie les deux APK debug en artifacts, quelle que
+soit la branche à l'origine du push (nom incluant l'environnement et le hash de commit court).

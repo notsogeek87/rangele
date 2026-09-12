@@ -31,28 +31,43 @@ jobs:
       - name: Run Kotlin lint (ktlint)
         run: ./gradlew ktlintCheck --no-daemon
 
-      - name: Run unit tests
-        run: ./gradlew testDebugUnitTest --no-daemon
+      - name: Run unit tests (staging + production variants)
+        run: ./gradlew test --no-daemon
 
-      - name: Build debug APK
+      - name: Build debug APKs (staging + production variants)
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Compute artifact name
-        id: apk_name
-        run: |
-          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
-          echo "value=inventaire-placard-${{ github.ref_name }}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+      - name: Compute short commit SHA
+        id: sha
+        run: echo "value=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
-      - name: Rename APK for this branch/commit
+      - name: Rename APKs for this commit
         run: |
           mkdir -p artifact
-          cp app/build/outputs/apk/debug/app-debug.apk "artifact/${{ steps.apk_name.outputs.value }}.apk"
+          find_apk() {
+            find app/build/outputs/apk/"$1"/debug -name '*.apk' -print -quit
+          }
+          staging_apk="$(find_apk staging)"
+          production_apk="$(find_apk production)"
+          if [ -z "$staging_apk" ] || [ -z "$production_apk" ]; then
+            echo "::error::Could not find built APK (staging: '$staging_apk', production: '$production_apk')"
+            exit 1
+          fi
+          cp "$staging_apk" "artifact/inventaire-placard-staging-${{ steps.sha.outputs.value }}.apk"
+          cp "$production_apk" "artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk"
 
-      - name: Upload debug APK
+      - name: Upload staging APK
         uses: actions/upload-artifact@v4
         with:
-          name: ${{ steps.apk_name.outputs.value }}
-          path: artifact/${{ steps.apk_name.outputs.value }}.apk
+          name: inventaire-placard-staging-${{ steps.sha.outputs.value }}
+          path: artifact/inventaire-placard-staging-${{ steps.sha.outputs.value }}.apk
+          if-no-files-found: error
+
+      - name: Upload main APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: inventaire-placard-main-${{ steps.sha.outputs.value }}
+          path: artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk
           if-no-files-found: error
 
       - name: Upload test and lint reports
@@ -61,6 +76,6 @@ jobs:
         with:
           name: reports-${{ github.ref_name }}-${{ github.run_number }}
           path: |
-            app/build/reports/tests/testDebugUnitTest
+            app/build/reports/tests
             app/build/reports/ktlint
           if-no-files-found: ignore

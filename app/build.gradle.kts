@@ -34,6 +34,22 @@ android {
         }
     }
 
+    // Two real variants (not just a CI naming trick): "staging" gets its own applicationId
+    // suffix and app name so it can be installed side by side with "production" on the same
+    // device. Named "production" rather than "main" to avoid colliding with Gradle/AGP's
+    // reserved "main" source set name; CI still labels its output APK "main" for the branch.
+    flavorDimensions += "env"
+    productFlavors {
+        create("staging") {
+            dimension = "env"
+            applicationIdSuffix = ".staging"
+            resValue("string", "app_name", "Yakwa Staging")
+        }
+        create("production") {
+            dimension = "env"
+        }
+    }
+
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
