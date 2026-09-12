@@ -14,5 +14,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "Rangele"
+rootProject.name = "Yakwa"
 include(":app")
