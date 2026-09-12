@@ -31,8 +31,8 @@ jobs:
       - name: Run Kotlin lint (ktlint)
         run: ./gradlew ktlintCheck --no-daemon
 
-      - name: Run unit tests (staging + production variants)
-        run: ./gradlew test --no-daemon
+      - name: Run unit tests (staging + production debug variants)
+        run: ./gradlew testStagingDebugUnitTest testProductionDebugUnitTest --no-daemon
 
       - name: Build debug APKs (staging + production variants)
         run: ./gradlew assembleDebug --no-daemon

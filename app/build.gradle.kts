@@ -70,10 +70,6 @@ android {
     }
 }
 
-ksp {
-    arg("room.schemaLocation", "$projectDir/schemas")
-}
-
 ktlint {
     version.set("1.3.1")
     android.set(true)

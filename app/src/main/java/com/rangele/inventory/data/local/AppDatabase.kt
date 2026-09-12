@@ -8,7 +8,7 @@ import com.rangele.inventory.data.local.entity.ProductEntity
 @Database(
     entities = [ProductEntity::class],
     version = 1,
-    exportSchema = true,
+    exportSchema = false,
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun productDao(): ProductDao

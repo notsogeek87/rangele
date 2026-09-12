@@ -41,7 +41,9 @@ dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore.
 ## CI
 
 `.github/workflows/build.yml` s'exécute sur chaque push vers `staging`/`main` : `ktlintCheck` →
-`test` → `assembleDebug`. Grâce aux flavors Gradle `staging`/`production` (voir Architecture),
+`testStagingDebugUnitTest testProductionDebugUnitTest` → `assembleDebug` (uniquement les variants
+debug, les variants release ne sont ni testés ni construits en CI). Grâce aux flavors Gradle
+`staging`/`production` (voir Architecture),
 un seul run produit et publie **deux** APK debug à chaque fois, quelle que soit la branche qui a
 déclenché le build : `inventaire-placard-staging-<sha court>` et `inventaire-placard-main-<sha
 court>` (le flavor `production` est renommé `main` uniquement dans le nom de l'artifact CI).
@@ -50,8 +52,10 @@ Les rapports de tests/lint sont aussi publiés en artifact.
 ## Architecture
 
 Structure de package sous `com.rangele.inventory` (voir README) :
-- `data` — entités Room, DAO, base de données, repository. Room génère son schéma JSON dans
-  `app/schemas` (configuré via `ksp { arg("room.schemaLocation", ...) }` dans `app/build.gradle.kts`).
+- `data` — entités Room, DAO, base de données, repository. `exportSchema = false` (pas de
+  migrations à tester pour l'instant) ; ne pas réactiver l'export sans configurer un
+  `room.schemaLocation` par variante, sinon les tâches KSP de `staging`/`production` écrivent en
+  parallèle dans le même fichier et le build échoue de façon intermittente (vu en CI).
 - `ocr` — reconnaissance de texte (ML Kit `text-recognition`) et heuristique de parsing des lignes
   d'un ticket de caisse en produits/quantités.
 - `ui` — écrans Jetpack Compose en MVVM (ViewModel + `lifecycle-viewmodel-compose`), navigation via
