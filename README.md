@@ -9,9 +9,10 @@ Tout est local sur l'appareil, sans backend.
 ## Identité visuelle
 
 Le logo évoque le rangement de placard : un cintre au-dessus d'une armoire à deux portes,
-sur un fond terracotta qui rappelle le bois. La palette (`app/src/main/java/com/rangele/inventory/ui/theme/Color.kt`)
-et l'icône de l'application en découlent, pour une identité cohérente sur tout l'app
-(icône de lancement, écran d'accueil, thème clair/sombre).
+dans les couleurs du design system Kawaii Pastel Pop de l'app (violet doux, rose pastel,
+crème, bleu bébé, menthe — voir `app/src/main/java/com/rangele/inventory/ui/theme/Color.kt`).
+Le mark est appliqué à l'icône de lancement (adaptive icon) et à l'écran d'accueil pour une
+identité cohérente dans toute l'app.
 
 - `docs/branding/yakwa-logo.svg` — icône seule
 - `docs/branding/yakwa-wordmark.svg` — icône + nom, pour un usage marketing

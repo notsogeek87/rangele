@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -46,6 +47,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.rangele.inventory.ui.theme.ShapeSmall
 import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -85,6 +87,11 @@ fun ScanCaptureScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
             )
         },
     ) { paddingValues ->
@@ -127,6 +134,8 @@ fun ScanCaptureScreen(
                             },
                         )
                     },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
                     modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
                 ) {
                     Icon(Icons.Default.CameraAlt, contentDescription = "Prendre une photo du ticket")
@@ -147,6 +156,7 @@ fun ScanCaptureScreen(
                     )
                     Button(
                         onClick = { permissionLauncher.launch(Manifest.permission.CAMERA) },
+                        shape = ShapeSmall,
                         modifier = Modifier.padding(top = 16.dp),
                     ) {
                         Text("Autoriser la caméra")

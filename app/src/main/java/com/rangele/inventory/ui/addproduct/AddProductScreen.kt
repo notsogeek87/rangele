@@ -12,11 +12,13 @@ import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -25,6 +27,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.ui.components.UnitDropdown
+import com.rangele.inventory.ui.theme.ShapeSmall
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +51,11 @@ fun AddProductScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
             )
         },
     ) { paddingValues ->
@@ -78,6 +86,7 @@ fun AddProductScreen(
             Button(
                 onClick = viewModel::onSaveClicked,
                 enabled = uiState.canSave,
+                shape = ShapeSmall,
                 modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
             ) {
                 Text("Ajouter à l'inventaire")
