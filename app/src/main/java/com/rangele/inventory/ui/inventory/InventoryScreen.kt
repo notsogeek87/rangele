@@ -57,6 +57,7 @@ fun InventoryScreen(
     val uiState by viewModel.uiState.collectAsState()
     var productPendingEdit by remember { mutableStateOf<ProductEntity?>(null) }
     var productPendingDelete by remember { mutableStateOf<ProductEntity?>(null) }
+    var searchQueryInput by remember { mutableStateOf(uiState.searchQuery) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -100,8 +101,11 @@ fun InventoryScreen(
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             OutlinedTextField(
-                value = uiState.searchQuery,
-                onValueChange = viewModel::onSearchQueryChanged,
+                value = searchQueryInput,
+                onValueChange = {
+                    searchQueryInput = it
+                    viewModel.onSearchQueryChanged(it)
+                },
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
                 placeholder = { Text("Rechercher un produit") },
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
@@ -115,10 +119,10 @@ fun InventoryScreen(
                 ) {
                     Text(
                         text =
-                            if (uiState.searchQuery.isBlank()) {
+                            if (searchQueryInput.isBlank()) {
                                 "Votre placard est vide. Ajoutez un produit ou scannez un ticket de caisse."
                             } else {
-                                "Aucun produit ne correspond à « ${uiState.searchQuery} »."
+                                "Aucun produit ne correspond à « $searchQueryInput »."
                             },
                         style = MaterialTheme.typography.bodyLarge,
                     )
