@@ -6,6 +6,7 @@ import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
@@ -16,11 +17,13 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -29,6 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -78,6 +82,19 @@ fun ScanCaptureScreen(
 
     val imageCapture = remember { ImageCapture.Builder().build() }
 
+    val galleryLauncher =
+        rememberLauncherForActivityResult(
+            ActivityResultContracts.PickVisualMedia(),
+        ) { uri ->
+            if (uri != null) {
+                viewModel.onPhotoCaptured(context, uri)
+                onCaptured()
+            }
+        }
+    val onImportFromGallery = {
+        galleryLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -123,22 +140,34 @@ fun ScanCaptureScreen(
                     },
                 )
 
-                FloatingActionButton(
-                    onClick = {
-                        capturePhoto(
-                            context = context,
-                            imageCapture = imageCapture,
-                            onSaved = { uri ->
-                                viewModel.onPhotoCaptured(context, uri)
-                                onCaptured()
-                            },
-                        )
-                    },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(16.dp),
                     modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
                 ) {
-                    Icon(Icons.Default.CameraAlt, contentDescription = "Prendre une photo du ticket")
+                    SmallFloatingActionButton(
+                        onClick = onImportFromGallery,
+                        containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                        contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = "Importer une photo déjà prise")
+                    }
+
+                    FloatingActionButton(
+                        onClick = {
+                            capturePhoto(
+                                context = context,
+                                imageCapture = imageCapture,
+                                onSaved = { uri ->
+                                    viewModel.onPhotoCaptured(context, uri)
+                                    onCaptured()
+                                },
+                            )
+                        },
+                        containerColor = MaterialTheme.colorScheme.primary,
+                        contentColor = MaterialTheme.colorScheme.onPrimary,
+                    ) {
+                        Icon(Icons.Default.CameraAlt, contentDescription = "Prendre une photo du ticket")
+                    }
                 }
 
                 if (uiState.isProcessing) {
@@ -151,7 +180,7 @@ fun ScanCaptureScreen(
                     verticalArrangement = Arrangement.Center,
                 ) {
                     Text(
-                        text = "L'accès à la caméra est nécessaire pour scanner un ticket de courses.",
+                        text = "L'accès à la caméra est nécessaire pour prendre une photo du ticket.",
                         style = MaterialTheme.typography.bodyLarge,
                     )
                     Button(
@@ -161,6 +190,23 @@ fun ScanCaptureScreen(
                     ) {
                         Text("Autoriser la caméra")
                     }
+                    Text(
+                        text = "Ou importez directement une photo déjà prise :",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.padding(top = 24.dp),
+                    )
+                    Button(
+                        onClick = onImportFromGallery,
+                        shape = ShapeSmall,
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) {
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = null)
+                        Text(" Importer depuis la galerie")
+                    }
+                }
+
+                if (uiState.isProcessing) {
+                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
                 }
             }
         }
