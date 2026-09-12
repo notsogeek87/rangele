@@ -16,8 +16,8 @@ Fonctionnalités MVP :
 - **Scan de ticket** : photo du ticket → OCR on-device (ML Kit) → extraction heuristique des
   lignes produit → écran de vérification (édition/suppression/fusion) → import dans l'inventaire.
 
-Le projet est au stade squelette Gradle : `AndroidManifest.xml` référence déjà `.RangeleApplication`
-et `.MainActivity`, mais aucun code source Kotlin n'existe encore sous `app/src/main/java`.
+Le MVP est implémenté (`app/src/main/java/com/rangele/inventory`) : Room, repository, écrans
+Compose (inventaire, ajout, scan/vérification de ticket) et thème Kawaii Pastel Pop.
 
 ## Commands
 
@@ -46,7 +46,7 @@ dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore.
 
 ## Architecture
 
-Structure de package prévue sous `com.rangele.inventory` (voir README) :
+Structure de package sous `com.rangele.inventory` (voir README) :
 - `data` — entités Room, DAO, base de données, repository. Room génère son schéma JSON dans
   `app/schemas` (configuré via `ksp { arg("room.schemaLocation", ...) }` dans `app/build.gradle.kts`).
 - `ocr` — reconnaissance de texte (ML Kit `text-recognition`) et heuristique de parsing des lignes
