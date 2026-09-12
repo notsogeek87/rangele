@@ -47,10 +47,12 @@ debug, les variants release ne sont ni testés ni construits en CI). Grâce aux 
 un seul run produit et publie **deux** APK debug à chaque fois, quelle que soit la branche qui a
 déclenché le build (le flavor `production` est renommé `main` uniquement dans le nom des
 artifacts/releases CI). Deux façons de les récupérer :
-- **Releases GitHub** (page "Releases" du repo) — deux releases "flottantes" `staging-latest` et
-  `main-latest`, dont l'APK asset (`Yakwa-Staging-<versionName>.apk` / `Yakwa-<versionName>.apk`,
-  ex. `Yakwa-1.0.apk`) est remplacé à chaque nouveau push. C'est l'endroit à privilégier pour
-  télécharger le dernier build.
+- **Releases GitHub** (page "Releases" du repo) — une release **par build** (donc par push), pas
+  de tag partagé qu'on écrase : tag `staging-v<versionName>-<run_number>` (pre-release) et
+  `v<versionName>-<run_number>` (release), avec un APK `Yakwa-Staging-<versionName>-<run_number>.apk`
+  / `Yakwa-<versionName>-<run_number>.apk` (ex. `Yakwa-1.0-25.apk`). GitHub marque automatiquement
+  la release `main` la plus récente comme "Latest release" ; c'est l'endroit à privilégier pour
+  télécharger un build donné ou le dernier en date.
 - **Artifacts du run** (onglet Actions → run concerné → bas de page) — une copie horodatée par
   commit, nommée `inventaire-placard-staging-<sha court>` / `inventaire-placard-main-<sha court>`,
   utile pour retrouver un build précis. Expire au bout de 90 jours (défaut GitHub Actions).
