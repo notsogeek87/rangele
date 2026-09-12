@@ -49,4 +49,24 @@ class MigrationTest {
             assertEquals(0, cursor.getInt(0))
         }
     }
+
+    @Test
+    fun `migration from 2 to 3 keeps existing products and defaults opened to false`() {
+        val dbName = "migration-test-2-3"
+        helper.createDatabase(dbName, 2).apply {
+            execSQL(
+                "INSERT INTO products (id, name, quantity, unit, updated_at) " +
+                    "VALUES (1, 'Riz basmati', 2.0, 'PIECE', 1000)",
+            )
+            close()
+        }
+
+        val migratedDb = helper.runMigrationsAndValidate(dbName, 3, true, MIGRATION_2_3)
+
+        migratedDb.query("SELECT * FROM products WHERE id = 1").use { cursor ->
+            assertTrue(cursor.moveToFirst())
+            assertEquals("Riz basmati", cursor.getString(cursor.getColumnIndexOrThrow("name")))
+            assertEquals(0, cursor.getInt(cursor.getColumnIndexOrThrow("opened")))
+        }
+    }
 }

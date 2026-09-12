@@ -11,7 +11,7 @@ import com.rangele.inventory.data.local.entity.ProductEntity
 
 @Database(
     entities = [ProductEntity::class, CategoryEntity::class, HistoryEntryEntity::class],
-    version = 2,
+    version = 3,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

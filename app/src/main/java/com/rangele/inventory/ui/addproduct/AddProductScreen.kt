@@ -28,6 +28,7 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.ui.components.CategoryDropdown
 import com.rangele.inventory.ui.components.ExpirationDateField
+import com.rangele.inventory.ui.components.OpenedCheckbox
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
 
@@ -89,6 +90,12 @@ fun AddProductScreen(
                 date = uiState.expirationDate,
                 onDateChanged = viewModel::onExpirationDateChanged,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+
+            OpenedCheckbox(
+                opened = uiState.opened,
+                onOpenedChanged = viewModel::onOpenedChanged,
+                modifier = Modifier.padding(top = 4.dp),
             )
 
             CategoryDropdown(

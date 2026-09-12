@@ -21,4 +21,6 @@ data class ParsedReceiptLine(
     val matchedProductName: String? = null,
     /** Optional, set by the user during review — OCR never infers this. */
     val expirationDate: LocalDate? = null,
+    /** Optional, set by the user during review — OCR never infers this. */
+    val opened: Boolean = false,
 )

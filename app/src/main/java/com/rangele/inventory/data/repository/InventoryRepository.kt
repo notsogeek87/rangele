@@ -29,12 +29,20 @@ interface InventoryRepository {
         expirationDate: Long? = null,
         category: String? = null,
         lowStockThreshold: Double? = null,
+        opened: Boolean = false,
     ): Long
 
     /** Adds [quantity] to an already-existing product's stock. */
     suspend fun incrementExisting(
         productId: Long,
         addedQuantity: Double,
+    )
+
+    /** Updates an existing product's expiration date and opened status. */
+    suspend fun updateDetails(
+        productId: Long,
+        expirationDate: Long?,
+        opened: Boolean,
     )
 
     suspend fun setQuantity(

@@ -19,6 +19,7 @@ data class AddProductUiState(
     val quantityText: String = "1",
     val unit: QuantityUnit = QuantityUnit.PIECE,
     val expirationDate: LocalDate? = null,
+    val opened: Boolean = false,
     val category: String? = null,
     val availableCategories: List<String> = emptyList(),
     val lowStockThresholdText: String = "",
@@ -61,6 +62,10 @@ class AddProductViewModel(
         _uiState.update { it.copy(expirationDate = date) }
     }
 
+    fun onOpenedChanged(opened: Boolean) {
+        _uiState.update { it.copy(opened = opened) }
+    }
+
     fun onCategoryChanged(category: String?) {
         _uiState.update { it.copy(category = category) }
     }
@@ -85,6 +90,7 @@ class AddProductViewModel(
                     expirationDate = state.expirationDate?.toEpochMillis(),
                     category = state.category,
                     lowStockThreshold = state.enteredLowStockThreshold,
+                    opened = state.opened,
                 )
                 _uiState.update { it.copy(isSaved = true) }
             }
@@ -112,6 +118,7 @@ class AddProductViewModel(
                 expirationDate = state.expirationDate?.toEpochMillis(),
                 category = state.category,
                 lowStockThreshold = state.enteredLowStockThreshold,
+                opened = state.opened,
             )
             _uiState.update { it.copy(isSaved = true, mergeSuggestion = null) }
         }

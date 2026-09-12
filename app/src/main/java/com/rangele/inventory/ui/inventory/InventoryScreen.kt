@@ -53,8 +53,11 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.R
 import com.rangele.inventory.data.local.entity.ProductEntity
+import com.rangele.inventory.ui.components.ExpirationDateField
+import com.rangele.inventory.ui.components.OpenedCheckbox
 import com.rangele.inventory.ui.theme.WarningOrange
 import com.rangele.inventory.util.ExpirationStatus
+import com.rangele.inventory.util.toEpochMillis
 import com.rangele.inventory.util.toLocalDate
 import java.time.format.DateTimeFormatter
 
@@ -249,11 +252,12 @@ fun InventoryScreen(
     }
 
     productPendingEdit?.let { product ->
-        EditQuantityDialog(
+        EditProductDialog(
             product = product,
             onDismiss = { productPendingEdit = null },
-            onConfirm = { newQuantity ->
+            onConfirm = { newQuantity, expirationDate, opened ->
                 viewModel.onQuantitySet(product, newQuantity)
+                viewModel.onDetailsUpdated(product, expirationDate, opened)
                 productPendingEdit = null
             },
         )
@@ -308,6 +312,13 @@ private fun ProductRow(
                         color = expirationColor(status),
                     )
                 }
+                if (product.opened) {
+                    Text(
+                        text = "Entamé",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = WarningOrange,
+                    )
+                }
             }
 
             IconButton(
@@ -348,26 +359,42 @@ private fun expirationColor(status: ExpirationStatus): Color =
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditQuantityDialog(
+private fun EditProductDialog(
     product: ProductEntity,
     onDismiss: () -> Unit,
-    onConfirm: (Double) -> Unit,
+    onConfirm: (quantity: Double, expirationDate: Long?, opened: Boolean) -> Unit,
 ) {
     var text by remember(product.id) { mutableStateOf(formatPlainQuantity(product.quantity)) }
+    var expirationDate by remember(product.id) { mutableStateOf(product.expirationDate?.toLocalDate()) }
+    var opened by remember(product.id) { mutableStateOf(product.opened) }
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Quantité de ${product.name}") },
+        title = { Text("Modifier ${product.name}") },
         text = {
-            OutlinedTextField(
-                value = text,
-                onValueChange = { text = it },
-                singleLine = true,
-                suffix = { Text(product.quantityUnit.label) },
-            )
+            Column {
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    singleLine = true,
+                    suffix = { Text(product.quantityUnit.label) },
+                )
+                ExpirationDateField(
+                    date = expirationDate,
+                    onDateChanged = { expirationDate = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
+                OpenedCheckbox(
+                    opened = opened,
+                    onOpenedChanged = { opened = it },
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
         },
         confirmButton = {
             TextButton(onClick = {
-                text.replace(',', '.').toDoubleOrNull()?.let(onConfirm)
+                text.replace(',', '.').toDoubleOrNull()?.let { quantity ->
+                    onConfirm(quantity, expirationDate?.toEpochMillis(), opened)
+                }
             }) { Text("Enregistrer") }
         },
         dismissButton = {

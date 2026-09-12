@@ -69,4 +69,17 @@ class InventoryRepositoryImplTest {
             assertEquals("Farine", entries.first().productName)
             assertEquals(4.0, entries.first().quantityRemoved, 0.0)
         }
+
+    @Test
+    fun `updateDetails changes the expiration date and opened status without touching quantity`() =
+        runTest {
+            val id = repository.insertAsNew("Fromage", 1.0, QuantityUnit.PIECE)
+
+            repository.updateDetails(id, expirationDate = 123456789L, opened = true)
+
+            val updated = repository.getById(id)
+            assertEquals(123456789L, updated?.expirationDate)
+            assertTrue(updated?.opened == true)
+            assertEquals(1.0, updated?.quantity ?: 0.0, 0.0)
+        }
 }

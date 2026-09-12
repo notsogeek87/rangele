@@ -22,6 +22,8 @@ data class ProductEntity(
     /** Below this quantity the product is surfaced in the suggested shopping list; null disables it. */
     @ColumnInfo(name = "low_stock_threshold")
     val lowStockThreshold: Double? = null,
+    /** Whether the product has already been opened/started. */
+    val opened: Boolean = false,
 ) {
     val quantityUnit: QuantityUnit
         get() = QuantityUnit.fromStorageValue(unit)

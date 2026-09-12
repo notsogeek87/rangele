@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.ocr.ParsedReceiptLine
 import com.rangele.inventory.ui.components.ExpirationDateField
+import com.rangele.inventory.ui.components.OpenedCheckbox
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
 import java.time.LocalDate
@@ -138,6 +139,7 @@ fun ReceiptReviewScreen(
                                 onMatchCleared = { viewModel.onLineMatchCleared(line.id) },
                                 onRemove = { viewModel.onLineRemoved(line.id) },
                                 onExpirationDateChanged = { viewModel.onLineExpirationDateChanged(line.id, it) },
+                                onOpenedChanged = { viewModel.onLineOpenedChanged(line.id, it) },
                             )
                         }
                     }
@@ -156,6 +158,7 @@ private fun ReceiptLineRow(
     onMatchCleared: () -> Unit,
     onRemove: () -> Unit,
     onExpirationDateChanged: (LocalDate?) -> Unit,
+    onOpenedChanged: (Boolean) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -204,6 +207,12 @@ private fun ReceiptLineRow(
                 onDateChanged = onExpirationDateChanged,
                 label = "Péremption (optionnel)",
                 modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 4.dp),
+            )
+
+            OpenedCheckbox(
+                opened = line.opened,
+                onOpenedChanged = onOpenedChanged,
+                modifier = Modifier.padding(start = 40.dp, top = 4.dp),
             )
 
             if (line.matchedProductName != null) {

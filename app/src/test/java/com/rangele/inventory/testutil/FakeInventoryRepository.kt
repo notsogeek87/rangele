@@ -60,6 +60,7 @@ class FakeInventoryRepository(
         expirationDate: Long?,
         category: String?,
         lowStockThreshold: Double?,
+        opened: Boolean,
     ): Long {
         val id = nextId++
         products.value = products.value +
@@ -71,6 +72,7 @@ class FakeInventoryRepository(
                 expirationDate = expirationDate,
                 category = category,
                 lowStockThreshold = lowStockThreshold,
+                opened = opened,
             )
         return id
     }
@@ -95,6 +97,14 @@ class FakeInventoryRepository(
     ) {
         val existing = getById(productId) ?: return
         setQuantity(productId, existing.quantity + delta)
+    }
+
+    override suspend fun updateDetails(
+        productId: Long,
+        expirationDate: Long?,
+        opened: Boolean,
+    ) {
+        replace(productId) { it.copy(expirationDate = expirationDate, opened = opened) }
     }
 
     override suspend fun deleteProduct(productId: Long) {

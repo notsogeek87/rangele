@@ -105,6 +105,13 @@ class ScanViewModel(
         updateLine(lineId) { it.copy(expirationDate = date) }
     }
 
+    fun onLineOpenedChanged(
+        lineId: String,
+        opened: Boolean,
+    ) {
+        updateLine(lineId) { it.copy(opened = opened) }
+    }
+
     fun onLineRemoved(lineId: String) {
         _uiState.update { state -> state.copy(lines = state.lines.filterNot { it.id == lineId }) }
     }
@@ -121,6 +128,7 @@ class ScanViewModel(
                         quantity = line.quantity,
                         unit = line.unit,
                         expirationDate = line.expirationDate?.toEpochMillis(),
+                        opened = line.opened,
                     )
                 }
             }

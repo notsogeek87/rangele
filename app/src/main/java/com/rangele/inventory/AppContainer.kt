@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.room.Room
 import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.local.MIGRATION_1_2
+import com.rangele.inventory.data.local.MIGRATION_2_3
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.CategoryRepositoryImpl
 import com.rangele.inventory.data.repository.HistoryRepository
@@ -42,7 +43,7 @@ class AppContainer(
                 appContext,
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME,
-            ).addMigrations(MIGRATION_1_2)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
             .build()
 
     val inventoryRepository: InventoryRepository =

@@ -37,6 +37,7 @@ class InventoryRepositoryImpl(
         expirationDate: Long?,
         category: String?,
         lowStockThreshold: Double?,
+        opened: Boolean,
     ): Long =
         productDao.insert(
             ProductEntity(
@@ -46,6 +47,7 @@ class InventoryRepositoryImpl(
                 expirationDate = expirationDate,
                 category = category,
                 lowStockThreshold = lowStockThreshold,
+                opened = opened,
             ),
         )
 
@@ -85,6 +87,21 @@ class InventoryRepositoryImpl(
     ) {
         val existing = productDao.getById(productId) ?: return
         setQuantity(productId, existing.quantity + delta)
+    }
+
+    override suspend fun updateDetails(
+        productId: Long,
+        expirationDate: Long?,
+        opened: Boolean,
+    ) {
+        val existing = productDao.getById(productId) ?: return
+        productDao.update(
+            existing.copy(
+                expirationDate = expirationDate,
+                opened = opened,
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
     }
 
     override suspend fun deleteProduct(productId: Long) {

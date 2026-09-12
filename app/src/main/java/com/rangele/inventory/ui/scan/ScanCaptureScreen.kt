@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
-import android.provider.MediaStore
 import android.util.Log
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -82,7 +81,8 @@ fun ScanCaptureScreen(
         if (!hasCameraPermission) permissionLauncher.launch(Manifest.permission.CAMERA)
     }
 
-    val imageCapture = remember { ImageCapture.Builder().build() }
+    val imageCapture =
+        remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build() }
 
     val galleryLauncher =
         rememberLauncherForActivityResult(
@@ -95,7 +95,10 @@ fun ScanCaptureScreen(
             }
         }
     val onImportFromGallery = {
-        galleryLauncher.launch(Intent(Intent.ACTION_PICK, MediaStore.Images.Media.EXTERNAL_CONTENT_URI))
+        // ACTION_GET_CONTENT (plutôt qu'ACTION_PICK sur la seule galerie photo) laisse l'utilisateur
+        // chercher une image dans n'importe quelle app (Fichiers, Drive, WhatsApp...), pas seulement
+        // les albums de la galerie par défaut.
+        galleryLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).setType("image/*"))
     }
 
     Scaffold(

@@ -30,3 +30,11 @@ val MIGRATION_1_2 =
             )
         }
     }
+
+/** Ajoute le statut "entamé" d'un produit, indépendant de sa date de péremption. */
+val MIGRATION_2_3 =
+    object : Migration(2, 3) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE products ADD COLUMN opened INTEGER NOT NULL DEFAULT 0")
+        }
+    }

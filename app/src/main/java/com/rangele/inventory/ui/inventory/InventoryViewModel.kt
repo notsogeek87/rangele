@@ -102,6 +102,14 @@ class InventoryViewModel(
         viewModelScope.launch { repository.setQuantity(product.id, newQuantity) }
     }
 
+    fun onDetailsUpdated(
+        product: ProductEntity,
+        expirationDate: Long?,
+        opened: Boolean,
+    ) {
+        viewModelScope.launch { repository.updateDetails(product.id, expirationDate, opened) }
+    }
+
     fun onDelete(product: ProductEntity) {
         viewModelScope.launch { repository.deleteProduct(product.id) }
     }
