@@ -4,6 +4,7 @@ plugins {
     alias(libs.plugins.kotlin.compose)
     alias(libs.plugins.ksp)
     alias(libs.plugins.ktlint)
+    alias(libs.plugins.room)
 }
 
 android {
@@ -63,6 +64,12 @@ android {
         compose = true
     }
 
+    testOptions {
+        unitTests {
+            isIncludeAndroidResources = true
+        }
+    }
+
     packaging {
         resources {
             excludes += "/META-INF/{AL2.0,LGPL2.1}"
@@ -74,6 +81,12 @@ ktlint {
     version.set("1.3.1")
     android.set(true)
     ignoreFailures.set(false)
+}
+
+// Per-flavor schema dirs avoid the staging/production parallel-write collision CLAUDE.md warns about.
+room {
+    schemaDirectory("staging", "$projectDir/schemas/staging")
+    schemaDirectory("production", "$projectDir/schemas/production")
 }
 
 dependencies {
@@ -98,6 +111,11 @@ dependencies {
     implementation(libs.androidx.room.runtime)
     implementation(libs.androidx.room.ktx)
     ksp(libs.androidx.room.compiler)
+    testImplementation(libs.androidx.room.testing)
+
+    implementation(libs.androidx.work.runtime.ktx)
+
+    implementation(libs.androidx.datastore.preferences)
 
     implementation(libs.androidx.camera.core)
     implementation(libs.androidx.camera.camera2)
@@ -111,6 +129,8 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.robolectric)
+    testImplementation(libs.androidx.test.core)
 
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

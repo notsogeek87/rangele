@@ -5,7 +5,14 @@ import com.rangele.inventory.data.model.QuantityUnit
 import kotlinx.coroutines.flow.Flow
 
 interface InventoryRepository {
-    fun observeProducts(query: String = ""): Flow<List<ProductEntity>>
+    fun observeProducts(
+        query: String = "",
+        category: String? = null,
+        sortByExpiration: Boolean = false,
+    ): Flow<List<ProductEntity>>
+
+    /** Products whose quantity has dropped below their own [ProductEntity.lowStockThreshold]. */
+    fun observeLowStockProducts(): Flow<List<ProductEntity>>
 
     suspend fun getAllOnce(): List<ProductEntity>
 
@@ -19,6 +26,9 @@ interface InventoryRepository {
         name: String,
         quantity: Double,
         unit: QuantityUnit,
+        expirationDate: Long? = null,
+        category: String? = null,
+        lowStockThreshold: Double? = null,
     ): Long
 
     /** Adds [quantity] to an already-existing product's stock. */

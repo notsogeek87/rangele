@@ -40,8 +40,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.ocr.ParsedReceiptLine
+import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
+import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -135,6 +137,7 @@ fun ReceiptReviewScreen(
                                 onIncludedChanged = { viewModel.onLineIncludedChanged(line.id, it) },
                                 onMatchCleared = { viewModel.onLineMatchCleared(line.id) },
                                 onRemove = { viewModel.onLineRemoved(line.id) },
+                                onExpirationDateChanged = { viewModel.onLineExpirationDateChanged(line.id, it) },
                             )
                         }
                     }
@@ -152,6 +155,7 @@ private fun ReceiptLineRow(
     onIncludedChanged: (Boolean) -> Unit,
     onMatchCleared: () -> Unit,
     onRemove: () -> Unit,
+    onExpirationDateChanged: (LocalDate?) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -194,6 +198,13 @@ private fun ReceiptLineRow(
                     modifier = Modifier.width(140.dp).padding(start = 8.dp),
                 )
             }
+
+            ExpirationDateField(
+                date = line.expirationDate,
+                onDateChanged = onExpirationDateChanged,
+                label = "Péremption (optionnel)",
+                modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 4.dp),
+            )
 
             if (line.matchedProductName != null) {
                 AssistChip(

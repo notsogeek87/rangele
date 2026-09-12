@@ -1,6 +1,7 @@
 package com.rangele.inventory.ocr
 
 import com.rangele.inventory.data.model.QuantityUnit
+import java.time.LocalDate
 import java.util.UUID
 
 /**
@@ -18,4 +19,6 @@ data class ParsedReceiptLine(
     /** Id of an existing inventory product this line looks like a match for, if any. */
     val matchedProductId: Long? = null,
     val matchedProductName: String? = null,
+    /** Optional, set by the user during review — OCR never infers this. */
+    val expirationDate: LocalDate? = null,
 )

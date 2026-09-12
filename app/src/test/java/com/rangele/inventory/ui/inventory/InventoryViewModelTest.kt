@@ -2,6 +2,7 @@ package com.rangele.inventory.ui.inventory
 
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
+import com.rangele.inventory.testutil.FakeCategoryRepository
 import com.rangele.inventory.testutil.FakeInventoryRepository
 import com.rangele.inventory.testutil.MainDispatcherRule
 import kotlinx.coroutines.flow.launchIn
@@ -20,7 +21,16 @@ class InventoryViewModelTest {
         name: String,
         quantity: Double = 1.0,
         unit: QuantityUnit = QuantityUnit.PIECE,
-    ) = ProductEntity(id = id, name = name, quantity = quantity, unit = unit.name)
+        category: String? = null,
+        expirationDate: Long? = null,
+    ) = ProductEntity(
+        id = id,
+        name = name,
+        quantity = quantity,
+        unit = unit.name,
+        category = category,
+        expirationDate = expirationDate,
+    )
 
     /** Keeps the WhileSubscribed StateFlow active for the duration of a test. */
     private fun InventoryViewModel.collectInBackground(scope: kotlinx.coroutines.CoroutineScope) {
@@ -34,7 +44,7 @@ class InventoryViewModelTest {
                 FakeInventoryRepository(
                     listOf(product(1, "Yaourt"), product(2, "Ananas"), product(3, "Beurre")),
                 )
-            val viewModel = InventoryViewModel(repository)
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             assertEquals(
@@ -51,7 +61,7 @@ class InventoryViewModelTest {
                 FakeInventoryRepository(
                     listOf(product(1, "Lait demi-ecreme"), product(2, "Lait entier"), product(3, "Farine")),
                 )
-            val viewModel = InventoryViewModel(repository)
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onSearchQueryChanged("lait")
@@ -67,7 +77,7 @@ class InventoryViewModelTest {
     fun `increment adds the unit step to the quantity`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 2.0)))
-            val viewModel = InventoryViewModel(repository)
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onIncrement(
@@ -88,7 +98,7 @@ class InventoryViewModelTest {
     fun `decrement never pushes the quantity below zero`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 0.0)))
-            val viewModel = InventoryViewModel(repository)
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onDecrement(
@@ -106,10 +116,56 @@ class InventoryViewModelTest {
         }
 
     @Test
+    fun `category filter narrows the product list to that category`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository =
+                FakeInventoryRepository(
+                    listOf(
+                        product(1, "Riz", category = "Placard"),
+                        product(2, "Yaourt", category = "Frigo"),
+                        product(3, "Farine", category = "Placard"),
+                    ),
+                )
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            viewModel.collectInBackground(backgroundScope)
+
+            viewModel.onCategoryFilterChanged("Placard")
+
+            assertEquals(
+                listOf("Farine", "Riz"),
+                viewModel.uiState.value.products
+                    .map { it.name },
+            )
+        }
+
+    @Test
+    fun `sorting by expiration puts products without a date last`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository =
+                FakeInventoryRepository(
+                    listOf(
+                        product(1, "Sans date"),
+                        product(2, "Perime bientot", expirationDate = 2_000L),
+                        product(3, "Perime plus tard", expirationDate = 3_000L),
+                    ),
+                )
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            viewModel.collectInBackground(backgroundScope)
+
+            viewModel.onSortModeChanged(SortMode.EXPIRATION)
+
+            assertEquals(
+                listOf("Perime bientot", "Perime plus tard", "Sans date"),
+                viewModel.uiState.value.products
+                    .map { it.name },
+            )
+        }
+
+    @Test
     fun `delete removes the product from the list`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes")))
-            val viewModel = InventoryViewModel(repository)
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onDelete(

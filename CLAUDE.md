@@ -16,8 +16,22 @@ Fonctionnalités MVP :
 - **Scan de ticket** : photo du ticket → OCR on-device (ML Kit) → extraction heuristique des
   lignes produit → écran de vérification (édition/suppression/fusion) → import dans l'inventaire.
 
-Le MVP est implémenté (`app/src/main/java/com/rangele/inventory`) : Room, repository, écrans
-Compose (inventaire, ajout, scan/vérification de ticket) et thème Kawaii Pastel Pop.
+Fonctionnalités V3 (au-dessus du MVP) :
+- **Dates de péremption** : champ optionnel sur le produit, saisi à l'ajout manuel ou au scan ;
+  code couleur dans la liste (orange < 7 jours, rouge si dépassé) ; tri par date de péremption ;
+  notification locale quotidienne (WorkManager) avec délai et heure réglables dans Paramètres.
+- **Catégories** : champ optionnel sur le produit, gérées (créer/renommer/supprimer) dans un écran
+  dédié ; filtre par catégorie dans l'inventaire. Supprimer une catégorie détache simplement les
+  produits qui l'utilisaient (ils redeviennent sans catégorie).
+- **Historique** : chaque retrait/suppression (pas les ajouts) journalisé et consultable dans un
+  écran dédié, ordre chronologique inverse.
+- **Liste de courses suggérée** : écran listant les produits sous leur `lowStockThreshold`
+  (seuil optionnel par produit, comparé brut à la quantité — pas de conversion d'unité) ; les
+  produits cochés peuvent être partagés en texte simple via l'intent de partage Android.
+
+Le MVP et la V3 sont implémentés (`app/src/main/java/com/rangele/inventory`) : Room, repository,
+écrans Compose (inventaire, ajout, scan/vérification de ticket, catégories, historique, liste de
+courses, paramètres), WorkManager (`work/`), DataStore (`data/settings/`) et thème Kawaii Pastel Pop.
 
 ## Commands
 
@@ -36,7 +50,9 @@ Pour lancer un seul test unitaire :
 ```
 
 Il n'y a pas de tests instrumentés (androidTest) au-delà de la dépendance `ui-test-junit4` déclarée
-dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore.
+dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore. Les tests qui ont besoin
+d'une vraie base SQLite (migration Room, historique) tournent en JVM via Robolectric plutôt qu'en
+androidTest — voir `MigrationTest` et `InventoryRepositoryImplTest`.
 
 ## CI
 
@@ -59,14 +75,21 @@ Les rapports de tests/lint sont aussi publiés en artifact (pas en release).
 ## Architecture
 
 Structure de package sous `com.rangele.inventory` (voir README) :
-- `data` — entités Room, DAO, base de données, repository. `exportSchema = false` (pas de
-  migrations à tester pour l'instant) ; ne pas réactiver l'export sans configurer un
-  `room.schemaLocation` par variante, sinon les tâches KSP de `staging`/`production` écrivent en
-  parallèle dans le même fichier et le build échoue de façon intermittente (vu en CI).
+- `data` — entités Room, DAO, base de données, repository, et `data/settings` (Preferences
+  DataStore pour les réglages de notification). `exportSchema = true` depuis la V3 (migration 1→2,
+  voir `Migrations.kt`) ; le plugin Gradle `androidx.room` exporte le schéma dans un dossier
+  différent par flavor (`room { schemaDirectory(...) }` dans `app/build.gradle.kts`) pour éviter
+  que les tâches KSP de `staging`/`production` écrivent en parallèle dans le même fichier.
 - `ocr` — reconnaissance de texte (ML Kit `text-recognition`) et heuristique de parsing des lignes
   d'un ticket de caisse en produits/quantités.
 - `ui` — écrans Jetpack Compose en MVVM (ViewModel + `lifecycle-viewmodel-compose`), navigation via
   `androidx-navigation-compose`.
+- `work` — `ExpirationCheckWorker` (WorkManager), planifié une fois par jour par
+  `ExpirationCheckScheduler` ; nécessite la permission runtime `POST_NOTIFICATIONS` (API 33+),
+  demandée depuis l'écran Paramètres avant d'activer les notifications. L'initialisation par
+  défaut de WorkManager est désactivée dans le manifest (`androidx.startup`) au profit d'un
+  `WorkManager.initialize(...)` manuel dans `RangeleApplication`, pour lui fournir un
+  `WorkerFactory` construit avec les dépendances de `AppContainer`.
 
 Points de configuration Gradle notables :
 - `namespace`/`applicationId` : `com.rangele.inventory` ; `minSdk` 26, `targetSdk`/`compileSdk` 35.

@@ -3,10 +3,26 @@ package com.rangele.inventory
 import android.content.Context
 import androidx.room.Room
 import com.rangele.inventory.data.local.AppDatabase
+import com.rangele.inventory.data.local.MIGRATION_1_2
+import com.rangele.inventory.data.repository.CategoryRepository
+import com.rangele.inventory.data.repository.CategoryRepositoryImpl
+import com.rangele.inventory.data.repository.HistoryRepository
+import com.rangele.inventory.data.repository.HistoryRepositoryImpl
 import com.rangele.inventory.data.repository.InventoryRepository
 import com.rangele.inventory.data.repository.InventoryRepositoryImpl
+import com.rangele.inventory.data.settings.SettingsRepository
+import com.rangele.inventory.data.settings.SettingsRepositoryImpl
+import com.rangele.inventory.data.settings.settingsDataStore
 import com.rangele.inventory.ocr.ReceiptParser
 import com.rangele.inventory.ocr.ReceiptTextRecognizer
+import com.rangele.inventory.work.ExpirationCheckScheduler
+import com.rangele.inventory.work.ExpirationCheckWorker
+import com.rangele.inventory.work.ExpirationNotifier
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 
 /**
  * Minimal hand-rolled dependency container. The app is small and single-module, so a full
@@ -16,17 +32,44 @@ import com.rangele.inventory.ocr.ReceiptTextRecognizer
 class AppContainer(
     context: Context,
 ) {
+    private val appContext = context.applicationContext
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
+
     private val database: AppDatabase =
         Room
             .databaseBuilder(
-                context.applicationContext,
+                appContext,
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME,
-            ).build()
+            ).addMigrations(MIGRATION_1_2)
+            .build()
 
-    val inventoryRepository: InventoryRepository = InventoryRepositoryImpl(database.productDao())
+    val inventoryRepository: InventoryRepository =
+        InventoryRepositoryImpl(database.productDao(), database.historyEntryDao())
+
+    val categoryRepository: CategoryRepository =
+        CategoryRepositoryImpl(database.categoryDao(), database.productDao())
+
+    val historyRepository: HistoryRepository = HistoryRepositoryImpl(database.historyEntryDao())
+
+    val settingsRepository: SettingsRepository = SettingsRepositoryImpl(appContext.settingsDataStore)
 
     val receiptTextRecognizer: ReceiptTextRecognizer = ReceiptTextRecognizer()
 
     val receiptParser: ReceiptParser = ReceiptParser()
+
+    private val expirationNotifier = ExpirationNotifier(appContext)
+
+    val expirationCheckScheduler = ExpirationCheckScheduler(appContext)
+
+    val expirationWorkerFactory =
+        ExpirationCheckWorker.Factory(inventoryRepository, settingsRepository, expirationNotifier)
+
+    init {
+        // Re-applies persisted settings in case the periodic work was never scheduled yet.
+        applicationScope.launch {
+            expirationCheckScheduler.apply(settingsRepository.settings.first())
+        }
+    }
 }

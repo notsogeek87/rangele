@@ -26,6 +26,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.rangele.inventory.ui.components.CategoryDropdown
+import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
 
@@ -81,6 +83,28 @@ fun AddProductScreen(
                 selectedUnit = uiState.unit,
                 onUnitSelected = viewModel::onUnitChanged,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+
+            ExpirationDateField(
+                date = uiState.expirationDate,
+                onDateChanged = viewModel::onExpirationDateChanged,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+
+            CategoryDropdown(
+                categories = uiState.availableCategories,
+                selectedCategory = uiState.category,
+                onCategorySelected = viewModel::onCategoryChanged,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+
+            OutlinedTextField(
+                value = uiState.lowStockThresholdText,
+                onValueChange = viewModel::onLowStockThresholdTextChanged,
+                label = { Text("Seuil de stock bas (optionnel)") },
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
             )
 
             Button(

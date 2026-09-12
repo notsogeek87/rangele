@@ -9,6 +9,8 @@ import com.rangele.inventory.data.repository.InventoryRepository
 import com.rangele.inventory.ocr.ParsedReceiptLine
 import com.rangele.inventory.ocr.ReceiptParser
 import com.rangele.inventory.ocr.ReceiptTextRecognizer
+import com.rangele.inventory.util.toEpochMillis
+import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -96,6 +98,13 @@ class ScanViewModel(
         updateLine(lineId) { it.copy(matchedProductId = null, matchedProductName = null) }
     }
 
+    fun onLineExpirationDateChanged(
+        lineId: String,
+        date: LocalDate?,
+    ) {
+        updateLine(lineId) { it.copy(expirationDate = date) }
+    }
+
     fun onLineRemoved(lineId: String) {
         _uiState.update { state -> state.copy(lines = state.lines.filterNot { it.id == lineId }) }
     }
@@ -107,7 +116,12 @@ class ScanViewModel(
                 if (matchedId != null) {
                     repository.incrementExisting(matchedId, line.quantity)
                 } else if (line.name.isNotBlank()) {
-                    repository.insertAsNew(line.name, line.quantity, line.unit)
+                    repository.insertAsNew(
+                        name = line.name,
+                        quantity = line.quantity,
+                        unit = line.unit,
+                        expirationDate = line.expirationDate?.toEpochMillis(),
+                    )
                 }
             }
             _uiState.update { it.copy(isImported = true) }

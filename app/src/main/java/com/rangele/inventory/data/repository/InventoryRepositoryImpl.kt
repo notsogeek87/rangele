@@ -1,6 +1,8 @@
 package com.rangele.inventory.data.repository
 
+import com.rangele.inventory.data.local.dao.HistoryEntryDao
 import com.rangele.inventory.data.local.dao.ProductDao
+import com.rangele.inventory.data.local.entity.HistoryEntryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.util.ProductNameMatcher
@@ -9,8 +11,15 @@ import kotlin.math.max
 
 class InventoryRepositoryImpl(
     private val productDao: ProductDao,
+    private val historyEntryDao: HistoryEntryDao,
 ) : InventoryRepository {
-    override fun observeProducts(query: String): Flow<List<ProductEntity>> = productDao.observeProducts(query.trim())
+    override fun observeProducts(
+        query: String,
+        category: String?,
+        sortByExpiration: Boolean,
+    ): Flow<List<ProductEntity>> = productDao.observeProducts(query.trim(), category, sortByExpiration)
+
+    override fun observeLowStockProducts(): Flow<List<ProductEntity>> = productDao.observeLowStock()
 
     override suspend fun getAllOnce(): List<ProductEntity> = productDao.getAllOnce()
 
@@ -25,12 +34,18 @@ class InventoryRepositoryImpl(
         name: String,
         quantity: Double,
         unit: QuantityUnit,
+        expirationDate: Long?,
+        category: String?,
+        lowStockThreshold: Double?,
     ): Long =
         productDao.insert(
             ProductEntity(
                 name = name.trim(),
                 quantity = quantity,
                 unit = unit.name,
+                expirationDate = expirationDate,
+                category = category,
+                lowStockThreshold = lowStockThreshold,
             ),
         )
 
@@ -52,9 +67,13 @@ class InventoryRepositoryImpl(
         quantity: Double,
     ) {
         val existing = productDao.getById(productId) ?: return
+        val newQuantity = max(0.0, quantity)
+        if (newQuantity < existing.quantity) {
+            logWithdrawal(existing.name, existing.quantity - newQuantity, existing.unit)
+        }
         productDao.update(
             existing.copy(
-                quantity = max(0.0, quantity),
+                quantity = newQuantity,
                 updatedAt = System.currentTimeMillis(),
             ),
         )
@@ -69,6 +88,22 @@ class InventoryRepositoryImpl(
     }
 
     override suspend fun deleteProduct(productId: Long) {
+        val existing = productDao.getById(productId) ?: return
+        logWithdrawal(existing.name, existing.quantity, existing.unit)
         productDao.deleteById(productId)
+    }
+
+    private suspend fun logWithdrawal(
+        productName: String,
+        quantityRemoved: Double,
+        unit: String,
+    ) {
+        historyEntryDao.insert(
+            HistoryEntryEntity(
+                productName = productName,
+                quantityRemoved = quantityRemoved,
+                unit = unit,
+            ),
+        )
     }
 }

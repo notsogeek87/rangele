@@ -16,11 +16,34 @@ class FakeInventoryRepository(
     private var nextId = (initialProducts.maxOfOrNull { it.id } ?: 0L) + 1
     private val products = MutableStateFlow(initialProducts)
 
-    override fun observeProducts(query: String): Flow<List<ProductEntity>> =
+    override fun observeProducts(
+        query: String,
+        category: String?,
+        sortByExpiration: Boolean,
+    ): Flow<List<ProductEntity>> =
+        products.map { list ->
+            val filtered =
+                list
+                    .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
+                    .filter { category == null || it.category == category }
+            if (sortByExpiration) {
+                filtered.sortedWith(
+                    compareBy<ProductEntity> { it.expirationDate == null }
+                        .thenBy { it.expirationDate }
+                        .thenBy { it.name.lowercase() },
+                )
+            } else {
+                filtered.sortedBy { it.name.lowercase() }
+            }
+        }
+
+    override fun observeLowStockProducts(): Flow<List<ProductEntity>> =
         products.map { list ->
             list
-                .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
-                .sortedBy { it.name.lowercase() }
+                .filter { product ->
+                    val threshold = product.lowStockThreshold
+                    threshold != null && product.quantity < threshold
+                }.sortedBy { it.name.lowercase() }
         }
 
     override suspend fun getAllOnce(): List<ProductEntity> = products.value
@@ -34,6 +57,9 @@ class FakeInventoryRepository(
         name: String,
         quantity: Double,
         unit: QuantityUnit,
+        expirationDate: Long?,
+        category: String?,
+        lowStockThreshold: Double?,
     ): Long {
         val id = nextId++
         products.value = products.value +
@@ -42,6 +68,9 @@ class FakeInventoryRepository(
                 name = name,
                 quantity = quantity,
                 unit = unit.name,
+                expirationDate = expirationDate,
+                category = category,
+                lowStockThreshold = lowStockThreshold,
             )
         return id
     }

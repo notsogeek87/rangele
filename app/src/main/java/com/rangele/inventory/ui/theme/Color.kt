@@ -21,3 +21,7 @@ val Outline = Color(0xFFC9B8DA)
 val SoftError = Color(0xFFE57373)
 val ErrorContainer = Color(0xFFFFDAD6)
 val OnErrorContainer = Color(0xFF5F1412)
+
+// Used only for the discreet expiration-date hint in the inventory list (see ProductRow) — a
+// product expiring soon (< 7 days), reusing SoftError above for one already past its date.
+val WarningOrange = Color(0xFFE8A342)

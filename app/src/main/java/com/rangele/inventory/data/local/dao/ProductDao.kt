@@ -14,15 +14,39 @@ interface ProductDao {
     @Query(
         "SELECT * FROM products " +
             "WHERE (:query = '' OR name LIKE '%' || :query || '%') " +
-            "ORDER BY name COLLATE NOCASE ASC",
+            "AND (:category IS NULL OR category = :category) " +
+            "ORDER BY " +
+            "CASE WHEN :sortByExpiration THEN (expiration_date IS NULL) ELSE 0 END ASC, " +
+            "CASE WHEN :sortByExpiration THEN expiration_date END ASC, " +
+            "name COLLATE NOCASE ASC",
     )
-    fun observeProducts(query: String): Flow<List<ProductEntity>>
+    fun observeProducts(
+        query: String,
+        category: String?,
+        sortByExpiration: Boolean,
+    ): Flow<List<ProductEntity>>
 
     @Query("SELECT * FROM products ORDER BY name COLLATE NOCASE ASC")
     suspend fun getAllOnce(): List<ProductEntity>
 
     @Query("SELECT * FROM products WHERE id = :id")
     suspend fun getById(id: Long): ProductEntity?
+
+    @Query(
+        "SELECT * FROM products " +
+            "WHERE low_stock_threshold IS NOT NULL AND quantity < low_stock_threshold " +
+            "ORDER BY name COLLATE NOCASE ASC",
+    )
+    fun observeLowStock(): Flow<List<ProductEntity>>
+
+    @Query("UPDATE products SET category = NULL WHERE category = :category")
+    suspend fun clearCategory(category: String)
+
+    @Query("UPDATE products SET category = :newName WHERE category = :oldName")
+    suspend fun renameCategory(
+        oldName: String,
+        newName: String,
+    )
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(product: ProductEntity): Long

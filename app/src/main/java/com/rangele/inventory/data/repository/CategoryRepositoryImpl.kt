@@ -1,0 +1,29 @@
+package com.rangele.inventory.data.repository
+
+import com.rangele.inventory.data.local.dao.CategoryDao
+import com.rangele.inventory.data.local.dao.ProductDao
+import com.rangele.inventory.data.local.entity.CategoryEntity
+import kotlinx.coroutines.flow.Flow
+
+class CategoryRepositoryImpl(
+    private val categoryDao: CategoryDao,
+    private val productDao: ProductDao,
+) : CategoryRepository {
+    override fun observeCategories(): Flow<List<CategoryEntity>> = categoryDao.observeAll()
+
+    override suspend fun createCategory(name: String): Long = categoryDao.insert(CategoryEntity(name = name.trim()))
+
+    override suspend fun renameCategory(
+        category: CategoryEntity,
+        newName: String,
+    ) {
+        val trimmed = newName.trim()
+        productDao.renameCategory(category.name, trimmed)
+        categoryDao.update(category.copy(name = trimmed))
+    }
+
+    override suspend fun deleteCategory(category: CategoryEntity) {
+        productDao.clearCategory(category.name)
+        categoryDao.deleteById(category.id)
+    }
+}
