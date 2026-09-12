@@ -41,6 +41,16 @@ jobs:
         id: sha
         run: echo "value=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
 
+      - name: Read app version name
+        id: version
+        run: |
+          version="$(grep -m1 'versionName = ' app/build.gradle.kts | sed -E 's/.*versionName = "([^"]*)".*/\1/')"
+          if [ -z "$version" ]; then
+            echo "::error::Could not read versionName from app/build.gradle.kts"
+            exit 1
+          fi
+          echo "value=$version" >> "$GITHUB_OUTPUT"
+
       - name: Rename APKs for this commit
         run: |
           mkdir -p artifact
@@ -53,8 +63,13 @@ jobs:
             echo "::error::Could not find built APK (staging: '$staging_apk', production: '$production_apk')"
             exit 1
           fi
+          # Copie horodatée par commit, gardée comme artifact de run (voir CLAUDE.md).
           cp "$staging_apk" "artifact/inventaire-placard-staging-${{ steps.sha.outputs.value }}.apk"
           cp "$production_apk" "artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk"
+          # Nom Yakwa-<version>-<build>, attaché à une release dédiée à ce build (voir plus bas) :
+          # chaque push obtient sa propre release, pas un asset partagé qu'on écrase.
+          cp "$staging_apk" "artifact/Yakwa-Staging-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk"
+          cp "$production_apk" "artifact/Yakwa-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk"
 
       - name: Upload staging APK
         uses: actions/upload-artifact@v4
@@ -70,27 +85,25 @@ jobs:
           path: artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk
           if-no-files-found: error
 
-      - name: Publish staging release (latest build)
+      - name: Publish staging release for this build
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: staging-latest
-          name: "Staging (dernier build)"
+          tag_name: staging-v${{ steps.version.outputs.value }}-${{ github.run_number }}
+          name: "Yakwa Staging ${{ steps.version.outputs.value }} (build ${{ github.run_number }})"
           prerelease: true
-          make_latest: false
-          files: artifact/inventaire-placard-staging-${{ steps.sha.outputs.value }}.apk
+          files: artifact/Yakwa-Staging-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk
           body: |
             Build automatique depuis le commit `${{ steps.sha.outputs.value }}` (branche `${{ github.ref_name }}`).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Publish main release (latest build)
+      - name: Publish main release for this build
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: main-latest
-          name: "Main (dernier build)"
+          tag_name: v${{ steps.version.outputs.value }}-${{ github.run_number }}
+          name: "Yakwa ${{ steps.version.outputs.value }} (build ${{ github.run_number }})"
           prerelease: false
-          make_latest: true
-          files: artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk
+          files: artifact/Yakwa-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk
           body: |
             Build automatique depuis le commit `${{ steps.sha.outputs.value }}` (branche `${{ github.ref_name }}`).
         env:
