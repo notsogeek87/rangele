@@ -1,6 +1,9 @@
 package com.rangele.inventory.ui.inventory
 
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -16,18 +19,21 @@ import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -51,16 +57,32 @@ fun InventoryScreen(
     var productPendingDelete by remember { mutableStateOf<ProductEntity?>(null) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mon inventaire") }) },
+        containerColor = MaterialTheme.colorScheme.background,
+        topBar = {
+            TopAppBar(
+                title = { Text("Mon inventaire") },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
+            )
+        },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End) {
                 ExtendedFloatingActionButton(
                     onClick = onScanReceiptClick,
                     icon = { Icon(Icons.Default.DocumentScanner, contentDescription = null) },
                     text = { Text("Scanner un ticket") },
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
                 )
                 Spacer(Modifier.height(12.dp))
-                FloatingActionButton(onClick = onAddProductClick) {
+                FloatingActionButton(
+                    onClick = onAddProductClick,
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                ) {
                     Icon(Icons.Default.Add, contentDescription = "Ajouter un produit")
                 }
             }
@@ -92,7 +114,11 @@ fun InventoryScreen(
                     )
                 }
             } else {
-                LazyColumn(modifier = Modifier.fillMaxSize()) {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
                     items(uiState.products, key = { it.id }) { product ->
                         ProductRow(
                             product = product,
@@ -101,7 +127,6 @@ fun InventoryScreen(
                             onQuantityClick = { productPendingEdit = product },
                             onDeleteClick = { productPendingDelete = product },
                         )
-                        HorizontalDivider()
                     }
                 }
             }
@@ -145,30 +170,46 @@ private fun ProductRow(
     onQuantityClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
-        verticalAlignment = Alignment.CenterVertically,
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
     ) {
-        Text(
-            text = product.name,
-            style = MaterialTheme.typography.bodyLarge,
-            modifier = Modifier.weight(1f),
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = product.name,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = Modifier.weight(1f),
+            )
 
-        IconButton(onClick = onDecrement) {
-            Icon(Icons.Default.Remove, contentDescription = "Diminuer la quantité")
-        }
+            IconButton(
+                onClick = onDecrement,
+                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+            ) {
+                Icon(Icons.Default.Remove, contentDescription = "Diminuer la quantité")
+            }
 
-        TextButton(onClick = onQuantityClick) {
-            Text(formatQuantity(product.quantity, product.quantityUnit.label))
-        }
+            TextButton(onClick = onQuantityClick) {
+                Text(formatQuantity(product.quantity, product.quantityUnit.label))
+            }
 
-        IconButton(onClick = onIncrement) {
-            Icon(Icons.Default.Add, contentDescription = "Augmenter la quantité")
-        }
+            IconButton(
+                onClick = onIncrement,
+                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary),
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Augmenter la quantité")
+            }
 
-        IconButton(onClick = onDeleteClick) {
-            Icon(Icons.Default.Delete, contentDescription = "Supprimer")
+            IconButton(
+                onClick = onDeleteClick,
+                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.error),
+            ) {
+                Icon(Icons.Default.Delete, contentDescription = "Supprimer")
+            }
         }
     }
 }

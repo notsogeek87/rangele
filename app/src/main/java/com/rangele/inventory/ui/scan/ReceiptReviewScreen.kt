@@ -1,7 +1,9 @@
 package com.rangele.inventory.ui.scan
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,10 +18,11 @@ import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material3.AssistChip
 import androidx.compose.material3.AssistChipDefaults
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -27,6 +30,7 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.ocr.ParsedReceiptLine
 import com.rangele.inventory.ui.components.UnitDropdown
+import com.rangele.inventory.ui.theme.ShapeSmall
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -60,12 +65,18 @@ fun ReceiptReviewScreen(
                         Icon(Icons.Default.ArrowBack, contentDescription = "Retour")
                     }
                 },
+                colors =
+                    TopAppBarDefaults.topAppBarColors(
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        titleContentColor = MaterialTheme.colorScheme.primary,
+                    ),
             )
         },
         bottomBar = {
             Button(
                 onClick = viewModel::onValidateImport,
                 enabled = uiState.includedCount > 0,
+                shape = ShapeSmall,
                 modifier = Modifier.fillMaxWidth().padding(16.dp),
             ) {
                 Text("Valider (${uiState.includedCount} article${if (uiState.includedCount > 1) "s" else ""})")
@@ -110,7 +121,11 @@ fun ReceiptReviewScreen(
                     }
 
                 else ->
-                    LazyColumn(modifier = Modifier.fillMaxSize()) {
+                    LazyColumn(
+                        modifier = Modifier.fillMaxSize(),
+                        contentPadding = PaddingValues(horizontal = 16.dp, vertical = 4.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
                         items(uiState.lines, key = { it.id }) { line ->
                             ReceiptLineRow(
                                 line = line,
@@ -121,7 +136,6 @@ fun ReceiptReviewScreen(
                                 onMatchCleared = { viewModel.onLineMatchCleared(line.id) },
                                 onRemove = { viewModel.onLineRemoved(line.id) },
                             )
-                            HorizontalDivider()
                         }
                     }
             }
@@ -139,55 +153,62 @@ private fun ReceiptLineRow(
     onMatchCleared: () -> Unit,
     onRemove: () -> Unit,
 ) {
-    Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Checkbox(checked = line.included, onCheckedChange = onIncludedChanged)
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(checked = line.included, onCheckedChange = onIncludedChanged)
 
-            OutlinedTextField(
-                value = line.name,
-                onValueChange = onNameChanged,
-                modifier = Modifier.weight(1f),
-                singleLine = true,
-                label = { Text("Produit") },
-            )
+                OutlinedTextField(
+                    value = line.name,
+                    onValueChange = onNameChanged,
+                    modifier = Modifier.weight(1f),
+                    singleLine = true,
+                    label = { Text("Produit") },
+                )
 
-            IconButton(onClick = onRemove) {
-                Icon(Icons.Default.DeleteOutline, contentDescription = "Retirer cette ligne")
+                IconButton(onClick = onRemove) {
+                    Icon(Icons.Default.DeleteOutline, contentDescription = "Retirer cette ligne")
+                }
             }
-        }
 
-        Row(
-            modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            OutlinedTextField(
-                value = formatPlainQuantity(line.quantity),
-                onValueChange = onQuantityTextChanged,
-                modifier = Modifier.width(90.dp),
-                singleLine = true,
-                label = { Text("Qté") },
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                OutlinedTextField(
+                    value = formatPlainQuantity(line.quantity),
+                    onValueChange = onQuantityTextChanged,
+                    modifier = Modifier.width(90.dp),
+                    singleLine = true,
+                    label = { Text("Qté") },
+                )
 
-            UnitDropdown(
-                selectedUnit = line.unit,
-                onUnitSelected = onUnitChanged,
-                modifier = Modifier.width(140.dp).padding(start = 8.dp),
-            )
-        }
+                UnitDropdown(
+                    selectedUnit = line.unit,
+                    onUnitSelected = onUnitChanged,
+                    modifier = Modifier.width(140.dp).padding(start = 8.dp),
+                )
+            }
 
-        if (line.matchedProductName != null) {
-            AssistChip(
-                onClick = onMatchCleared,
-                label = { Text("Fusion avec « ${line.matchedProductName} »") },
-                trailingIcon = {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = "Créer un nouveau produit à la place",
-                    )
-                },
-                colors = AssistChipDefaults.assistChipColors(),
-                modifier = Modifier.padding(start = 48.dp, top = 4.dp),
-            )
+            if (line.matchedProductName != null) {
+                AssistChip(
+                    onClick = onMatchCleared,
+                    label = { Text("Fusion avec « ${line.matchedProductName} »") },
+                    trailingIcon = {
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "Créer un nouveau produit à la place",
+                        )
+                    },
+                    colors = AssistChipDefaults.assistChipColors(),
+                    modifier = Modifier.padding(start = 48.dp, top = 4.dp),
+                )
+            }
         }
     }
 }
