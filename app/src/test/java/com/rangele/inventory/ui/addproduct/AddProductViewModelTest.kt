@@ -18,7 +18,7 @@ class AddProductViewModelTest {
 
     @Test
     fun `saving a brand new product inserts it directly`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository()
             val viewModel = AddProductViewModel(repository)
 
@@ -34,7 +34,7 @@ class AddProductViewModelTest {
 
     @Test
     fun `saving a name similar to an existing product proposes a merge`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository =
                 FakeInventoryRepository(
                     listOf(
@@ -55,7 +55,7 @@ class AddProductViewModelTest {
 
     @Test
     fun `confirming the merge adds the quantity to the existing product`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository =
                 FakeInventoryRepository(
                     listOf(
@@ -76,7 +76,7 @@ class AddProductViewModelTest {
 
     @Test
     fun `creating a separate product keeps both entries`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository =
                 FakeInventoryRepository(
                     listOf(

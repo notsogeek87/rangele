@@ -29,7 +29,7 @@ class InventoryViewModelTest {
 
     @Test
     fun `products are exposed sorted alphabetically`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository =
                 FakeInventoryRepository(
                     listOf(product(1, "Yaourt"), product(2, "Ananas"), product(3, "Beurre")),
@@ -46,7 +46,7 @@ class InventoryViewModelTest {
 
     @Test
     fun `search query filters the product list`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository =
                 FakeInventoryRepository(
                     listOf(product(1, "Lait demi-ecreme"), product(2, "Lait entier"), product(3, "Farine")),
@@ -65,7 +65,7 @@ class InventoryViewModelTest {
 
     @Test
     fun `increment adds the unit step to the quantity`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 2.0)))
             val viewModel = InventoryViewModel(repository)
             viewModel.collectInBackground(backgroundScope)
@@ -86,7 +86,7 @@ class InventoryViewModelTest {
 
     @Test
     fun `decrement never pushes the quantity below zero`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 0.0)))
             val viewModel = InventoryViewModel(repository)
             viewModel.collectInBackground(backgroundScope)
@@ -107,7 +107,7 @@ class InventoryViewModelTest {
 
     @Test
     fun `delete removes the product from the list`() =
-        runTest {
+        runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes")))
             val viewModel = InventoryViewModel(repository)
             viewModel.collectInBackground(backgroundScope)

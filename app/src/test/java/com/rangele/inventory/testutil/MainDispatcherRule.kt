@@ -11,12 +11,14 @@ import org.junit.runner.Description
 
 /**
  * Points [Dispatchers.Main] at an unconfined test dispatcher for the duration of a test, so
- * viewModelScope coroutines (including StateFlow.stateIn collectors) run eagerly and
- * synchronously instead of needing manual scheduler advancement.
+ * viewModelScope coroutines run eagerly. [dispatcher] is exposed so tests can pass it to
+ * `runTest(dispatcher)` — sharing one scheduler between the test body and viewModelScope is
+ * required for `stateIn`'s WhileSubscribed sharing coroutine (launched on Main) to actually
+ * produce values for a collector started from the test's own coroutine scope.
  */
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(
-    private val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
+    val dispatcher: TestDispatcher = UnconfinedTestDispatcher(),
 ) : TestWatcher() {
     override fun starting(description: Description) {
         Dispatchers.setMain(dispatcher)
