@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 108" width="680" height="216">
+  <title>Yakwa wordmark</title>
+  <rect x="0" y="0" width="108" height="108" rx="24" fill="#D9773F" />
+  <path d="M50.5,26 C50.5,21.5 57.5,21.5 57.5,26" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" />
+  <path d="M54,26 L34,39 M54,26 L74,39" fill="none" stroke="#FFFFFF" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round" />
+  <path d="M34,40 h12 a4,4 0 0 1 4,4 v38 a4,4 0 0 1 -4,4 h-12 a4,4 0 0 1 -4,-4 v-38 a4,4 0 0 1 4,-4 z" fill="#FFFFFF" />
+  <path d="M62,40 h12 a4,4 0 0 1 4,4 v38 a4,4 0 0 1 -4,4 h-12 a4,4 0 0 1 -4,-4 v-38 a4,4 0 0 1 4,-4 z" fill="#FFFFFF" />
+  <circle cx="45" cy="63" r="2.8" fill="#D9773F" />
+  <circle cx="63" cy="63" r="2.8" fill="#D9773F" />
+  <text x="128" y="70" font-family="Helvetica, Arial, sans-serif" font-size="52" font-weight="700" fill="#3D2B1F">Yakwa</text>
+</svg>

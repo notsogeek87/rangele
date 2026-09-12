@@ -1,8 +1,20 @@
-# Rangele
+<img src="docs/branding/yakwa-logo.svg" alt="Logo Yakwa" width="96" height="96" />
+
+# Yakwa
 
 Application Android native (Kotlin, Jetpack Compose, Room) pour gérer l'inventaire d'un
 placard/cuisine, avec import assisté par scan de ticket de courses (CameraX + ML Kit OCR).
 Tout est local sur l'appareil, sans backend.
+
+## Identité visuelle
+
+Le logo évoque le rangement de placard : un cintre au-dessus d'une armoire à deux portes,
+sur un fond terracotta qui rappelle le bois. La palette (`app/src/main/java/com/rangele/inventory/ui/theme/Color.kt`)
+et l'icône de l'application en découlent, pour une identité cohérente sur tout l'app
+(icône de lancement, écran d'accueil, thème clair/sombre).
+
+- `docs/branding/yakwa-logo.svg` — icône seule
+- `docs/branding/yakwa-wordmark.svg` — icône + nom, pour un usage marketing
 
 ## Fonctionnalités (MVP)
 

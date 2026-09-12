@@ -2,14 +2,15 @@ package com.rangele.inventory.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-val GreenPrimary = Color(0xFF2E7D32)
-val GreenPrimaryContainer = Color(0xFFA8F5A2)
-val GreenSecondary = Color(0xFF52634F)
-val Background = Color(0xFFF7FBF2)
-val Surface = Color(0xFFF7FBF2)
-val Error = Color(0xFFBA1A1A)
+// Yakwa brand palette — warm terracotta/wood tones evoking an organized wardrobe.
+val PrimaryLight = Color(0xFFC96A34)
+val PrimaryContainerLight = Color(0xFFFFDCC2)
+val SecondaryLight = Color(0xFF6B5A4F)
+val BackgroundLight = Color(0xFFFFF8F1)
+val SurfaceLight = Color(0xFFFFF8F1)
+val ErrorLight = Color(0xFFBA1A1A)
 
-val GreenPrimaryDark = Color(0xFF8FDB88)
-val GreenPrimaryContainerDark = Color(0xFF0A5313)
-val BackgroundDark = Color(0xFF10140F)
-val SurfaceDark = Color(0xFF10140F)
+val PrimaryDark = Color(0xFFFFB787)
+val PrimaryContainerDark = Color(0xFF8A4A1D)
+val BackgroundDark = Color(0xFF1E1712)
+val SurfaceDark = Color(0xFF1E1712)

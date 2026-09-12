@@ -36,7 +36,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
+import com.rangele.inventory.R
 import com.rangele.inventory.data.local.entity.ProductEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -51,7 +53,19 @@ fun InventoryScreen(
     var productPendingDelete by remember { mutableStateOf<ProductEntity?>(null) }
 
     Scaffold(
-        topBar = { TopAppBar(title = { Text("Mon inventaire") }) },
+        topBar = {
+            TopAppBar(
+                title = { Text("Mon inventaire") },
+                navigationIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_yakwa_mark),
+                        contentDescription = "Yakwa",
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.padding(start = 16.dp).height(24.dp),
+                    )
+                },
+            )
+        },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End) {
                 ExtendedFloatingActionButton(
