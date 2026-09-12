@@ -1,0 +1,103 @@
+package com.rangele.inventory.ui.navigation
+
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.navigation.NavBackStackEntry
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.navigation
+import androidx.navigation.compose.rememberNavController
+import com.rangele.inventory.AppContainer
+import com.rangele.inventory.ui.addproduct.AddProductScreen
+import com.rangele.inventory.ui.addproduct.AddProductViewModel
+import com.rangele.inventory.ui.inventory.InventoryScreen
+import com.rangele.inventory.ui.inventory.InventoryViewModel
+import com.rangele.inventory.ui.scan.ReceiptReviewScreen
+import com.rangele.inventory.ui.scan.ScanCaptureScreen
+import com.rangele.inventory.ui.scan.ScanViewModel
+
+@Composable
+fun RangeleNavHost(
+    container: AppContainer,
+    navController: NavHostController = rememberNavController(),
+) {
+    NavHost(navController = navController, startDestination = RangeleDestinations.INVENTORY) {
+        composable(RangeleDestinations.INVENTORY) { entry ->
+            val viewModel: InventoryViewModel =
+                viewModel(
+                    entry,
+                    factory =
+                        viewModelFactory {
+                            initializer { InventoryViewModel(container.inventoryRepository) }
+                        },
+                )
+            InventoryScreen(
+                viewModel = viewModel,
+                onAddProductClick = { navController.navigate(RangeleDestinations.ADD_PRODUCT) },
+                onScanReceiptClick = { navController.navigate(RangeleDestinations.SCAN_GRAPH) },
+            )
+        }
+
+        composable(RangeleDestinations.ADD_PRODUCT) { entry ->
+            val viewModel: AddProductViewModel =
+                viewModel(
+                    entry,
+                    factory =
+                        viewModelFactory {
+                            initializer { AddProductViewModel(container.inventoryRepository) }
+                        },
+                )
+            AddProductScreen(
+                viewModel = viewModel,
+                onBackClick = { navController.popBackStack() },
+                onSaved = { navController.popBackStack() },
+            )
+        }
+
+        navigation(startDestination = RangeleDestinations.SCAN_CAPTURE, route = RangeleDestinations.SCAN_GRAPH) {
+            composable(RangeleDestinations.SCAN_CAPTURE) { entry ->
+                val scanViewModel = rememberScanViewModel(navController, entry, container)
+                ScanCaptureScreen(
+                    viewModel = scanViewModel,
+                    onBackClick = { navController.popBackStack(RangeleDestinations.INVENTORY, inclusive = false) },
+                    onCaptured = { navController.navigate(RangeleDestinations.SCAN_REVIEW) },
+                )
+            }
+
+            composable(RangeleDestinations.SCAN_REVIEW) { entry ->
+                val scanViewModel = rememberScanViewModel(navController, entry, container)
+                ReceiptReviewScreen(
+                    viewModel = scanViewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onImported = { navController.popBackStack(RangeleDestinations.INVENTORY, inclusive = false) },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun rememberScanViewModel(
+    navController: NavHostController,
+    entry: NavBackStackEntry,
+    container: AppContainer,
+): ScanViewModel {
+    val parentEntry = remember(entry) { navController.getBackStackEntry(RangeleDestinations.SCAN_GRAPH) }
+    return viewModel(
+        parentEntry,
+        factory =
+            viewModelFactory {
+                initializer {
+                    ScanViewModel(
+                        container.inventoryRepository,
+                        container.receiptTextRecognizer,
+                        container.receiptParser,
+                    )
+                }
+            },
+    )
+}

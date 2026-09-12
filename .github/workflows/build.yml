@@ -1,0 +1,66 @@
+name: Build
+
+on:
+  push:
+    branches:
+      - staging
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Run Kotlin lint (ktlint)
+        run: ./gradlew ktlintCheck --no-daemon
+
+      - name: Run unit tests
+        run: ./gradlew testDebugUnitTest --no-daemon
+
+      - name: Build debug APK
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Compute artifact name
+        id: apk_name
+        run: |
+          SHORT_SHA=$(echo "${{ github.sha }}" | cut -c1-7)
+          echo "value=inventaire-placard-${{ github.ref_name }}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
+
+      - name: Rename APK for this branch/commit
+        run: |
+          mkdir -p artifact
+          cp app/build/outputs/apk/debug/app-debug.apk "artifact/${{ steps.apk_name.outputs.value }}.apk"
+
+      - name: Upload debug APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ steps.apk_name.outputs.value }}
+          path: artifact/${{ steps.apk_name.outputs.value }}.apk
+          if-no-files-found: error
+
+      - name: Upload test and lint reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: reports-${{ github.ref_name }}-${{ github.run_number }}
+          path: |
+            app/build/reports/tests/testDebugUnitTest
+            app/build/reports/ktlint
+          if-no-files-found: ignore
