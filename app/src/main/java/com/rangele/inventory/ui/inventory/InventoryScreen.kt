@@ -18,6 +18,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
@@ -25,6 +26,7 @@ import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Remove
+import androidx.compose.material.icons.filled.RemoveShoppingCart
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapVert
 import androidx.compose.material3.AlertDialog
@@ -281,6 +283,7 @@ fun InventoryScreen(
                             onIncrement = { viewModel.onIncrement(product) },
                             onDecrement = { viewModel.onDecrement(product) },
                             onQuantityClick = { productPendingEdit = product },
+                            onShoppingListClick = { viewModel.onToggleShoppingList(product) },
                             onDeleteClick = { productPendingDelete = product },
                         )
                     }
@@ -386,6 +389,7 @@ private fun ProductRow(
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     onQuantityClick: () -> Unit,
+    onShoppingListClick: () -> Unit,
     onDeleteClick: () -> Unit,
 ) {
     Card(
@@ -436,6 +440,25 @@ private fun ProductRow(
                 colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary),
             ) {
                 Icon(Icons.Default.Add, contentDescription = "Augmenter la quantité")
+            }
+
+            IconButton(
+                onClick = onShoppingListClick,
+                colors =
+                    IconButtonDefaults.iconButtonColors(
+                        contentColor =
+                            if (product.inShoppingList) {
+                                MaterialTheme.colorScheme.secondary
+                            } else {
+                                MaterialTheme.colorScheme.onSurfaceVariant
+                            },
+                    ),
+            ) {
+                if (product.inShoppingList) {
+                    Icon(Icons.Default.RemoveShoppingCart, contentDescription = "Retirer de la liste de courses")
+                } else {
+                    Icon(Icons.Default.AddShoppingCart, contentDescription = "Ajouter à la liste de courses")
+                }
             }
 
             IconButton(

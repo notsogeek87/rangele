@@ -31,6 +31,17 @@ data class ProductEntity(
      */
     @ColumnInfo(defaultValue = "0")
     val opened: Boolean = false,
+    /**
+     * Ajout manuel à la liste de courses suggérée, indépendamment de [lowStockThreshold] : le
+     * produit y figure tant que ce drapeau est levé, même avec du stock. C'est le pendant manuel
+     * de la suggestion automatique par seuil, et il ne se baisse que par une action de
+     * l'utilisateur (réapprovisionner ne le retire pas).
+     *
+     * Défaut SQL déclaré pour que la colonne ajoutée par migration corresponde à celle que Room
+     * crée à l'installation (même raison que [opened]).
+     */
+    @ColumnInfo(name = "in_shopping_list", defaultValue = "0")
+    val inShoppingList: Boolean = false,
     /** Code-barres scanné (EAN/UPC), utilisé pour reconnaître le produit lors d'un futur scan. */
     val barcode: String? = null,
     /** Placard du produit (voir [com.rangele.inventory.data.local.entity.PantryEntity]), null si non assigné. */

@@ -30,8 +30,10 @@ Fonctionnalités V3 (au-dessus du MVP) :
   zéro y figure donc aussi, et le produit reste dans l'inventaire au lieu d'être supprimé). Tout
   nouveau produit reçoit `DEFAULT_LOW_STOCK_THRESHOLD` (= 1), quel que soit le mode d'ajout, pour
   que la suggestion fonctionne sans réglage ; le seuil reste modifiable depuis la fiche produit, et
-  l'effacer exclut le produit des suggestions. Les produits cochés peuvent être partagés en texte
-  simple via l'intent de partage Android.
+  l'effacer exclut le produit des suggestions. En complément de cet automatisme, le bouton panier
+  de chaque ligne de l'inventaire bascule `inShoppingList`, qui force la présence du produit dans
+  la liste quel que soit son stock — seul un nouvel appui le retire (réapprovisionner ne suffit
+  pas). Les produits cochés peuvent être partagés en texte simple via l'intent de partage Android.
 - **Placards** : champ optionnel sur le produit, gérés (créer/renommer/supprimer, choix du
   placard par défaut) dans un écran dédié accessible depuis le menu « ⋮ » de l'inventaire ; le
   placard par défaut est présélectionné à chaque ajout de produit (manuel, scan de code-barres

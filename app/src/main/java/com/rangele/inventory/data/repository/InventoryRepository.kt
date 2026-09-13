@@ -69,6 +69,15 @@ interface InventoryRepository {
         lowStockThreshold: Double?,
     )
 
+    /**
+     * Ajoute ou retire manuellement le produit de la liste de courses suggérée, sans toucher à son
+     * stock ni à son seuil : un produit bien approvisionné peut ainsi y figurer quand même.
+     */
+    suspend fun setInShoppingList(
+        productId: Long,
+        inShoppingList: Boolean,
+    )
+
     suspend fun setQuantity(
         productId: Long,
         quantity: Double,

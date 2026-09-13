@@ -239,6 +239,35 @@ class InventoryRepositoryImplTest {
         }
 
     @Test
+    fun `a manually added product is suggested whatever its stock, until it is removed again`() =
+        runTest {
+            // Bien approvisionné et très au-dessus de son seuil : seul l'ajout manuel peut le faire
+            // figurer en liste de courses.
+            val id = repository.insertAsNew("Cafe", 10.0, QuantityUnit.PIECE)
+            assertTrue(repository.observeLowStockProducts().first().none { it.id == id })
+
+            repository.setInShoppingList(id, true)
+            assertTrue(repository.observeLowStockProducts().first().any { it.id == id })
+
+            repository.setInShoppingList(id, false)
+            assertTrue(repository.observeLowStockProducts().first().none { it.id == id })
+        }
+
+    @Test
+    fun `adding a product to the shopping list leaves its stock and threshold untouched`() =
+        runTest {
+            val id = repository.insertAsNew("Riz", 4.0, QuantityUnit.PIECE)
+            repository.updateLowStockThreshold(id, 2.0)
+
+            repository.setInShoppingList(id, true)
+
+            val product = repository.getById(id)
+            assertEquals(4.0, product?.quantity ?: -1.0, 0.0)
+            assertEquals(2.0, product?.lowStockThreshold ?: -1.0, 0.0)
+            assertTrue(product?.inShoppingList == true)
+        }
+
+    @Test
     fun `a product dropping to zero stock stays visible in the inventory and can be suggested`() =
         runTest {
             // "Coquillettes: stock = 1, seuil = 1" already qualifies (1 <= 1); consuming the last

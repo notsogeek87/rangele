@@ -157,6 +157,15 @@ class InventoryRepositoryImpl(
         )
     }
 
+    // Écriture ciblée sur la seule colonne concernée plutôt qu'un getById + update : réécrire la
+    // ligne entière écraserait une modification concurrente de quantité ou de seuil.
+    override suspend fun setInShoppingList(
+        productId: Long,
+        inShoppingList: Boolean,
+    ) {
+        productDao.setInShoppingList(productId, inShoppingList)
+    }
+
     override suspend fun deleteProduct(productId: Long) {
         val existing = productDao.getById(productId) ?: return
         logWithdrawal(existing.name, existing.quantity, existing.unit)

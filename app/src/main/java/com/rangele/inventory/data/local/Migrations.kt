@@ -122,3 +122,15 @@ val MIGRATION_6_7 =
             )
         }
     }
+
+/**
+ * Ajoute l'ajout manuel à la liste de courses (`products.in_shopping_list`), pendant manuel de la
+ * suggestion automatique par seuil. Les produits existants partent à 0 : seul l'utilisateur lève
+ * ce drapeau.
+ */
+val MIGRATION_7_8 =
+    object : Migration(7, 8) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE products ADD COLUMN in_shopping_list INTEGER NOT NULL DEFAULT 0")
+        }
+    }

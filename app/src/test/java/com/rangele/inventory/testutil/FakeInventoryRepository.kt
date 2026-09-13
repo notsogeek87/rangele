@@ -53,7 +53,7 @@ class FakeInventoryRepository(
             list
                 .filter { product ->
                     val threshold = product.lowStockThreshold
-                    threshold != null && product.quantity <= threshold
+                    product.inShoppingList || (threshold != null && product.quantity <= threshold)
                 }.sortedBy { it.name.lowercase() }
         }
 
@@ -155,6 +155,13 @@ class FakeInventoryRepository(
         lowStockThreshold: Double?,
     ) {
         replace(productId) { it.copy(lowStockThreshold = lowStockThreshold) }
+    }
+
+    override suspend fun setInShoppingList(
+        productId: Long,
+        inShoppingList: Boolean,
+    ) {
+        replace(productId) { it.copy(inShoppingList = inShoppingList) }
     }
 
     override suspend fun deleteProduct(productId: Long) {
