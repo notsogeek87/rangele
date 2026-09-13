@@ -106,16 +106,18 @@ fun BarcodeResultScreen(
                     ProductForm(
                         viewModel = viewModel,
                         saveLabel = "Créer le produit",
-                        headerMessage = "Ce produit n'est pas référencé sur Open Food Facts. Vous pouvez tout de " +
-                            "même le créer : le code-barres sera conservé pour le reconnaître la prochaine fois.",
+                        headerMessage =
+                            "Ce produit n'est pas référencé sur Open Food Facts. Vous pouvez tout de même " +
+                                "le créer : le code-barres sera conservé pour le reconnaître la prochaine fois.",
                     )
 
                 is BarcodeLookupState.Error ->
                     ProductForm(
                         viewModel = viewModel,
                         saveLabel = "Créer le produit",
-                        headerMessage = "Impossible de contacter Open Food Facts (vérifiez votre connexion). " +
-                            "Vous pouvez réessayer, ou créer le produit manuellement.",
+                        headerMessage =
+                            "Impossible de contacter Open Food Facts (vérifiez votre connexion). " +
+                                "Vous pouvez réessayer, ou créer le produit manuellement.",
                         onRetry = viewModel::onRetryLookup,
                     )
             }

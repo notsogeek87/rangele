@@ -65,9 +65,19 @@ internal fun parseOffResponse(
         OffProduct(
             barcode = barcode,
             name = name,
-            brand = product.optString("brands").ifBlank { null }?.substringBefore(',')?.trim(),
+            brand =
+                product
+                    .optString("brands")
+                    .ifBlank { null }
+                    ?.substringBefore(',')
+                    ?.trim(),
             packageFormat = product.optString("quantity").ifBlank { null },
-            category = product.optString("categories").ifBlank { null }?.substringAfterLast(',')?.trim(),
+            category =
+                product
+                    .optString("categories")
+                    .ifBlank { null }
+                    ?.substringAfterLast(',')
+                    ?.trim(),
             imageUrl =
                 product.optString("image_front_url").ifBlank { null }
                     ?: product.optString("image_url").ifBlank { null },
