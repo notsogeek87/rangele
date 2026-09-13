@@ -32,6 +32,9 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE id = :id")
     suspend fun getById(id: Long): ProductEntity?
 
+    @Query("SELECT * FROM products WHERE barcode = :barcode LIMIT 1")
+    suspend fun getByBarcode(barcode: String): ProductEntity?
+
     @Query(
         "SELECT * FROM products " +
             "WHERE low_stock_threshold IS NOT NULL AND quantity < low_stock_threshold " +

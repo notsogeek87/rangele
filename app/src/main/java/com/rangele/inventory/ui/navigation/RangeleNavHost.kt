@@ -14,6 +14,9 @@ import androidx.navigation.compose.rememberNavController
 import com.rangele.inventory.AppContainer
 import com.rangele.inventory.ui.addproduct.AddProductScreen
 import com.rangele.inventory.ui.addproduct.AddProductViewModel
+import com.rangele.inventory.ui.barcode.BarcodeResultScreen
+import com.rangele.inventory.ui.barcode.BarcodeScanScreen
+import com.rangele.inventory.ui.barcode.BarcodeScanViewModel
 import com.rangele.inventory.ui.categories.CategoriesScreen
 import com.rangele.inventory.ui.categories.CategoriesViewModel
 import com.rangele.inventory.ui.history.HistoryScreen
@@ -73,7 +76,32 @@ fun RangeleNavHost(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onSaved = { navController.popBackStack() },
+                onScanBarcodeClick = { navController.navigate(RangeleDestinations.BARCODE_GRAPH) },
             )
+        }
+
+        navigation(startDestination = RangeleDestinations.BARCODE_SCAN, route = RangeleDestinations.BARCODE_GRAPH) {
+            composable(RangeleDestinations.BARCODE_SCAN) { entry ->
+                val barcodeViewModel = rememberBarcodeScanViewModel(navController, entry, container)
+                BarcodeScanScreen(
+                    viewModel = barcodeViewModel,
+                    onBackClick = { navController.popBackStack() },
+                    onDetected = { navController.navigate(RangeleDestinations.BARCODE_RESULT) },
+                )
+            }
+
+            composable(RangeleDestinations.BARCODE_RESULT) { entry ->
+                val barcodeViewModel = rememberBarcodeScanViewModel(navController, entry, container)
+                BarcodeResultScreen(
+                    viewModel = barcodeViewModel,
+                    onBackClick = {
+                        // Reset the lookup so a fresh scan isn't ignored by onBarcodeDetected's Scanning guard.
+                        barcodeViewModel.onRetryScan()
+                        navController.popBackStack()
+                    },
+                    onDone = { navController.popBackStack(RangeleDestinations.INVENTORY, inclusive = false) },
+                )
+            }
         }
 
         navigation(startDestination = RangeleDestinations.SCAN_CAPTURE, route = RangeleDestinations.SCAN_GRAPH) {
@@ -152,6 +180,28 @@ fun RangeleNavHost(
             SettingsScreen(viewModel = viewModel, onBackClick = { navController.popBackStack() })
         }
     }
+}
+
+@Composable
+private fun rememberBarcodeScanViewModel(
+    navController: NavHostController,
+    entry: NavBackStackEntry,
+    container: AppContainer,
+): BarcodeScanViewModel {
+    val parentEntry = remember(entry) { navController.getBackStackEntry(RangeleDestinations.BARCODE_GRAPH) }
+    return viewModel(
+        parentEntry,
+        factory =
+            viewModelFactory {
+                initializer {
+                    BarcodeScanViewModel(
+                        container.inventoryRepository,
+                        container.categoryRepository,
+                        container.openFoodFactsClient,
+                    )
+                }
+            },
+    )
 }
 
 @Composable

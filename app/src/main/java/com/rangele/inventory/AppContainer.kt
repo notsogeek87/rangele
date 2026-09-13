@@ -2,9 +2,12 @@ package com.rangele.inventory
 
 import android.content.Context
 import androidx.room.Room
+import com.rangele.inventory.barcode.OpenFoodFactsClient
+import com.rangele.inventory.barcode.OpenFoodFactsClientImpl
 import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.local.MIGRATION_1_2
 import com.rangele.inventory.data.local.MIGRATION_2_3
+import com.rangele.inventory.data.local.MIGRATION_3_4
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.CategoryRepositoryImpl
 import com.rangele.inventory.data.repository.HistoryRepository
@@ -43,7 +46,7 @@ class AppContainer(
                 appContext,
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
             .build()
 
     val inventoryRepository: InventoryRepository =
@@ -59,6 +62,8 @@ class AppContainer(
     val receiptTextRecognizer: ReceiptTextRecognizer = ReceiptTextRecognizer()
 
     val receiptParser: ReceiptParser = ReceiptParser()
+
+    val openFoodFactsClient: OpenFoodFactsClient = OpenFoodFactsClientImpl()
 
     private val expirationNotifier = ExpirationNotifier(appContext)
 

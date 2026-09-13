@@ -38,3 +38,12 @@ val MIGRATION_2_3 =
             db.execSQL("ALTER TABLE products ADD COLUMN opened INTEGER NOT NULL DEFAULT 0")
         }
     }
+
+/** Ajoute le code-barres scanné, utilisé pour reconnaître un produit déjà présent lors d'un futur scan. */
+val MIGRATION_3_4 =
+    object : Migration(3, 4) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE products ADD COLUMN barcode TEXT")
+            db.execSQL("CREATE INDEX IF NOT EXISTS index_products_barcode ON products (barcode)")
+        }
+    }

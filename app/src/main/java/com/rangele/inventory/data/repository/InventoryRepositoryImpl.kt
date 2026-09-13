@@ -30,6 +30,11 @@ class InventoryRepositoryImpl(
         return ProductNameMatcher.findBestMatch(name, productDao.getAllOnce()) { it.name }
     }
 
+    override suspend fun findByBarcode(barcode: String): ProductEntity? {
+        if (barcode.isBlank()) return null
+        return productDao.getByBarcode(barcode)
+    }
+
     override suspend fun insertAsNew(
         name: String,
         quantity: Double,
@@ -38,6 +43,7 @@ class InventoryRepositoryImpl(
         category: String?,
         lowStockThreshold: Double?,
         opened: Boolean,
+        barcode: String?,
     ): Long =
         productDao.insert(
             ProductEntity(
@@ -48,6 +54,7 @@ class InventoryRepositoryImpl(
                 category = category,
                 lowStockThreshold = lowStockThreshold,
                 opened = opened,
+                barcode = barcode,
             ),
         )
 
