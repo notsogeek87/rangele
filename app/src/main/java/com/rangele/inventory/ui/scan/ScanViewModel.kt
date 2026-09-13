@@ -54,7 +54,10 @@ class ScanViewModel(
     ) {
         _uiState.update { it.copy(capturedImageUri = uri, isProcessing = true, error = null) }
         viewModelScope.launch {
-            val defaultPantryId = _uiState.value.availablePantries.firstOrNull { it.isDefault }?.id
+            val defaultPantryId =
+                _uiState.value.availablePantries
+                    .firstOrNull { it.isDefault }
+                    ?.id
             runCatching {
                 val text = textRecognizer.recognizeText(context, uri)
                 receiptParser.parse(text).map { line ->
