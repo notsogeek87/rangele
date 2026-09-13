@@ -56,6 +56,33 @@ Pour lancer un seul test unitaire :
 ./gradlew testStagingDebugUnitTest --tests "com.rangele.inventory.SomeClassTest.someMethod"
 ```
 
+### En session Claude Code sur le web : Gradle ne marche pas, ktlint si
+
+Dans une session distante, la politique réseau refuse `dl.google.com` (Google Maven), donc le plugin
+Android Gradle n'est jamais résolu et **aucune** commande `./gradlew` ne peut tourner : ni
+`ktlintCheck`, ni `test`, ni `assembleDebug`. Le premier retour sur le code y vient donc de la CI —
+c'est ce qui a produit plusieurs builds KO d'affilée, tous pour du formatage ktlint.
+
+Maven Central, lui, est accessible. Le CLI ktlint en vient et reproduit le verdict de
+`./gradlew ktlintCheck` à l'identique (mêmes source sets, même version, même style) :
+
+```
+scripts/ktlint.sh        # vérifie (sortie 1 si violation) — équivalent de ./gradlew ktlintCheck
+scripts/ktlint.sh -F     # corrige automatiquement — équivalent de ./gradlew ktlintFormat
+```
+
+**Règle : lancer `scripts/ktlint.sh` et obtenir une sortie 0 avant tout push.** Le jar est
+pré-téléchargé par le hook `SessionStart` (`.claude/hooks/session-start.sh`), donc la commande est
+instantanée. Un push sans cette vérification, c'est un build KO.
+
+Ce que ce script ne couvre pas : la compilation et les tests unitaires, qui exigent Gradle. Tant que
+`dl.google.com` reste bloqué, ils ne peuvent être validés que par la CI — l'annoncer plutôt que de
+présenter un changement non testé comme vérifié. Pour lever cette limite, autoriser `dl.google.com`
+dans la politique réseau de l'environnement (voir https://code.claude.com/docs/en/claude-code-on-the-web).
+
+Ne pas ajouter `ktlint_code_style` au `.editorconfig` : le `android.set(true)` du plugin Gradle ne
+bascule pas ktlint 1.x en style `android_studio` (ce style rejette du code que la CI accepte).
+
 Il n'y a pas de tests instrumentés (androidTest) au-delà de la dépendance `ui-test-junit4` déclarée
 dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore. Les tests qui ont besoin
 d'une vraie base SQLite (migration Room, historique) tournent en JVM via Robolectric plutôt qu'en

@@ -63,7 +63,7 @@ class BarcodeScanViewModelTest {
         }
 
     @Test
-    fun `removing the last unit of an already present product deletes it`() =
+    fun `removing the last unit of an already present product leaves it at zero stock`() =
         runTest(mainDispatcherRule.dispatcher) {
             val existing = productWithBarcode("111").copy(quantity = 1.0)
             val repository = FakeInventoryRepository(listOf(existing))
@@ -79,7 +79,7 @@ class BarcodeScanViewModelTest {
             viewModel.onAdjustExistingQuantity(-1.0)
 
             assertTrue(viewModel.uiState.value.isSaved)
-            assertTrue(repository.getAllOnce().isEmpty())
+            assertEquals(0.0, repository.getAllOnce().single().quantity, 0.0)
         }
 
     @Test
