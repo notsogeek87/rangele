@@ -120,26 +120,26 @@ class InventoryViewModel(
         viewModelScope.launch { repository.adjustQuantity(product.id, -product.quantityUnit.step) }
     }
 
-    fun onQuantitySet(
+    /**
+     * Saves every field of a continuous-unit product's sheet.
+     *
+     * Les trois appels sont séquentiels dans une seule coroutine, et ce n'est pas un détail :
+     * chacun relit le produit puis réécrit la ligne entière (Room `@Update`). Lancés en
+     * parallèle, ils partent tous du même état d'avant modification et le dernier à écrire
+     * écrase les deux autres — le seuil saisi disparaissait silencieusement.
+     */
+    fun onProductSheetSaved(
         product: ProductEntity,
-        newQuantity: Double,
-    ) {
-        viewModelScope.launch { repository.setQuantity(product.id, newQuantity) }
-    }
-
-    fun onDetailsUpdated(
-        product: ProductEntity,
+        quantity: Double,
         expirationDate: Long?,
         opened: Boolean,
-    ) {
-        viewModelScope.launch { repository.updateDetails(product.id, expirationDate, opened) }
-    }
-
-    fun onLowStockThresholdUpdated(
-        product: ProductEntity,
         lowStockThreshold: Double?,
     ) {
-        viewModelScope.launch { repository.updateLowStockThreshold(product.id, lowStockThreshold) }
+        viewModelScope.launch {
+            repository.setQuantity(product.id, quantity)
+            repository.updateDetails(product.id, expirationDate, opened)
+            repository.updateLowStockThreshold(product.id, lowStockThreshold)
+        }
     }
 
     /** Loads the items of [productId] for the edit dialog to show. */
@@ -151,11 +151,16 @@ class InventoryViewModel(
         _editingItems.value = null
     }
 
+    /** Même sérialisation que [onProductSheetSaved], pour un produit en unité discrète. */
     fun onItemsSaved(
         product: ProductEntity,
         items: List<ItemDetails>,
+        lowStockThreshold: Double?,
     ) {
-        viewModelScope.launch { repository.saveItems(product.id, items) }
+        viewModelScope.launch {
+            repository.saveItems(product.id, items)
+            repository.updateLowStockThreshold(product.id, lowStockThreshold)
+        }
     }
 
     fun onDelete(product: ProductEntity) {

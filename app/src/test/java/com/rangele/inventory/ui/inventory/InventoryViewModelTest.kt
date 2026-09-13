@@ -119,6 +119,31 @@ class InventoryViewModelTest {
         }
 
     @Test
+    fun `saving the product sheet persists quantity, details and low stock threshold together`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeInventoryRepository(listOf(product(1, "Coquillettes", quantity = 3.0)))
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
+            viewModel.collectInBackground(backgroundScope)
+
+            viewModel.onProductSheetSaved(
+                viewModel.uiState.value.products
+                    .single(),
+                quantity = 2.0,
+                expirationDate = 5_000L,
+                opened = true,
+                lowStockThreshold = 2.0,
+            )
+
+            val saved =
+                viewModel.uiState.value.products
+                    .single()
+            assertEquals(2.0, saved.quantity, 0.0)
+            assertEquals(5_000L, saved.expirationDate)
+            assertTrue(saved.opened)
+            assertEquals(2.0, saved.lowStockThreshold ?: -1.0, 0.0)
+        }
+
+    @Test
     fun `category filter narrows the product list to that category`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository =
