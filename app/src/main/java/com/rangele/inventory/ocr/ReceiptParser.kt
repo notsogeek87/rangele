@@ -39,8 +39,18 @@ class ReceiptParser {
         if (digitTokenCount >= 2 && normalized.count { it.isLetter() } <= 3) return true
 
         val padded = " $normalized "
-        return NOISE_KEYWORDS.any { padded.contains(" $it ") }
+        if (NOISE_KEYWORDS.any { padded.contains(" $it ") }) return true
+
+        // On a real receipt, a product line always carries its price ("NOM DU PRODUIT   12,90")
+        // or an explicit quantity multiplier ("2 X ..."). Header/footer lines (store name and
+        // address, client/loyalty info, till/transaction ids, barcodes as digit groups...) almost
+        // never do, so requiring one of those two signals filters most of that noise out without
+        // having to guess every possible label a receipt template might print.
+        return !hasProductSignal(line)
     }
+
+    private fun hasProductSignal(line: String): Boolean =
+        PRICE_LIKE_PATTERN.containsMatchIn(line) || QUANTITY_MULTIPLIER_PATTERN.containsMatchIn(line)
 
     private fun parseLine(line: String): ParsedReceiptLine? {
         var remainder = line
@@ -135,9 +145,17 @@ class ReceiptParser {
                 "magasin",
                 "bienvenue",
                 "ouvert",
+                "montant",
+                "montants",
+                "client",
+                "transaction",
+                "operateur",
+                "echeance",
+                "numero",
             )
 
         val TRAILING_PRICE_PATTERN = Regex("""(\d{1,4}[.,]\d{2})\s*(€|eur|EUR)?\s*$""")
+        val PRICE_LIKE_PATTERN = Regex("""\d{1,4}[.,]\d{2}""")
         val QUANTITY_MULTIPLIER_PATTERN =
             Regex("""(?i)\b(\d+(?:[.,]\d+)?)\s*x\b|\bx\s*(\d+(?:[.,]\d+)?)\b""")
         val LEFTOVER_SYMBOLS_PATTERN = Regex("""[^\p{L}\p{Nd} ]""")
