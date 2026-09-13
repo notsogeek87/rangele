@@ -97,4 +97,62 @@ class ReceiptParserTest {
     fun `ignores blank input`() {
         assertNull(parser.parse("").firstOrNull())
     }
+
+    private val departmentStoreReceipt =
+        """
+        PRINTEMPS
+        Printemps Haussmann Tél: 0142825000
+        *** Ticket   client   ***
+        Montants exprimés en euros
+        N° Client: 0022065577
+        Statut:031 Fid-Silver
+
+        DEC MUG AU PRINTEMPS PARIS                 10,00
+        34905553030581
+        ALI BOISSON GIMBER                         29,90
+        2100023146438
+        DEC MUG AU PRINTEMPS PARIS                 10,00
+        34905553030598
+
+        Total payé                                 49,90
+        Payé en CB                                 49,90
+
+        Montant HT   Taux TVA   Mt TVA   Montant TTC
+        41,58         20,00      8,32      49,90
+
+        Magasin 010 - Ilot 2 - Mode -
+        Etage 0 -GTPV GTPV1 - TPV 364 -
+        Transaction 15204 - Opérateur 84772
+        29/05/2021 - 17:46:00
+
+        2 9 0 1 0 0 3 6 4 1 5 2 0 4 7
+
+        Gain de POINTS-SHOPPING : 25
+        Cumul total de POINTS-SHOPPING : 53
+        Nombre de BR disponibles : 0 BR
+        Date d'échéance :
+
+        Merci de votre visite et à très bientôt.
+        Conservez ce ticket
+        Date limite d'échange le 28/06/2021
+        hors alimentaire
+        """.trimIndent()
+
+    @Test
+    fun `extracts only the real product lines from a department store receipt`() {
+        val lines = parser.parse(departmentStoreReceipt)
+        assertEquals(3, lines.size)
+        assertTrue(lines.all { it.name == "Dec Mug Au Printemps Paris" || it.name == "Ali Boisson Gimber" })
+    }
+
+    @Test
+    fun `drops store name, client and till metadata lines with no price or quantity`() {
+        val names = parser.parse(departmentStoreReceipt).map { it.name.lowercase() }
+        assertTrue(names.none { it.contains("printemps") && !it.contains("mug") })
+        assertTrue(names.none { it.contains("client") })
+        assertTrue(names.none { it.contains("fid") || it.contains("silver") })
+        assertTrue(names.none { it.contains("transaction") || it.contains("operateur") })
+        assertTrue(names.none { it.contains("points") || it.contains("gain") || it.contains("cumul") })
+        assertTrue(names.none { it.contains("hors") || it.contains("alimentaire") })
+    }
 }
