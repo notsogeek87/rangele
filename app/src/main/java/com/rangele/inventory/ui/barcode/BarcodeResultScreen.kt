@@ -8,7 +8,9 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
@@ -187,7 +189,7 @@ private fun ProductForm(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
-    Column(modifier = Modifier.fillMaxSize()) {
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         if (offProduct != null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
@@ -267,7 +269,7 @@ private fun ProductForm(
             onClick = viewModel::onSaveClicked,
             enabled = uiState.canSave,
             shape = ShapeSmall,
-            modifier = Modifier.fillMaxWidth().padding(top = 24.dp),
+            modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp),
         ) {
             Text(saveLabel)
         }

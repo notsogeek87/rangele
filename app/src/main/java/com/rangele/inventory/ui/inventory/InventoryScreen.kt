@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
+import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapVert
@@ -69,6 +70,7 @@ private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/
 fun InventoryScreen(
     viewModel: InventoryViewModel,
     onAddProductClick: () -> Unit,
+    onScanBarcodeClick: () -> Unit,
     onScanReceiptClick: () -> Unit,
     onImportReceiptClick: () -> Unit,
     onCategoriesClick: () -> Unit,
@@ -160,6 +162,14 @@ fun InventoryScreen(
         },
         floatingActionButton = {
             Column(horizontalAlignment = Alignment.End) {
+                ExtendedFloatingActionButton(
+                    onClick = onScanBarcodeClick,
+                    icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
+                    text = { Text("Scanner un code-barres") },
+                    containerColor = MaterialTheme.colorScheme.primary,
+                    contentColor = MaterialTheme.colorScheme.onPrimary,
+                )
+                Spacer(Modifier.height(12.dp))
                 ExtendedFloatingActionButton(
                     onClick = onScanReceiptClick,
                     icon = { Icon(Icons.Default.DocumentScanner, contentDescription = null) },
