@@ -47,12 +47,12 @@ class MigrationTest {
             val database =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, databaseName)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .allowMainThreadQueries()
                     .build()
 
             try {
-                // Opening the database runs both migrations and makes Room validate the final schema.
+                // Opening the database runs all migrations and makes Room validate the final schema.
                 val products = database.productDao().getAllOnce()
 
                 assertEquals(1, products.size)
@@ -63,6 +63,7 @@ class MigrationTest {
                 assertNull(product.category)
                 assertNull(product.lowStockThreshold)
                 assertFalse(product.opened)
+                assertNull(product.barcode)
 
                 assertTrue(database.historyEntryDao().getAllOnce().isEmpty())
             } finally {

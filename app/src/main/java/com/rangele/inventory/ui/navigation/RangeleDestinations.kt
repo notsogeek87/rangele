@@ -11,6 +11,10 @@ object RangeleDestinations {
     const val SCAN_IMPORT = "scan/import"
     const val SCAN_REVIEW = "scan/review"
 
+    const val BARCODE_GRAPH = "barcode"
+    const val BARCODE_SCAN = "barcode/scan"
+    const val BARCODE_RESULT = "barcode/result"
+
     const val CATEGORIES = "categories"
     const val HISTORY = "history"
     const val SHOPPING_LIST = "shopping_list"

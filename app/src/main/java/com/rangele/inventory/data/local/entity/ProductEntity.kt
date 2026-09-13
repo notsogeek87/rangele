@@ -2,10 +2,11 @@ package com.rangele.inventory.data.local.entity
 
 import androidx.room.ColumnInfo
 import androidx.room.Entity
+import androidx.room.Index
 import androidx.room.PrimaryKey
 import com.rangele.inventory.data.model.QuantityUnit
 
-@Entity(tableName = "products")
+@Entity(tableName = "products", indices = [Index("barcode")])
 data class ProductEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
@@ -30,6 +31,8 @@ data class ProductEntity(
      */
     @ColumnInfo(defaultValue = "0")
     val opened: Boolean = false,
+    /** Code-barres scanné (EAN/UPC), utilisé pour reconnaître le produit lors d'un futur scan. */
+    val barcode: String? = null,
 ) {
     val quantityUnit: QuantityUnit
         get() = QuantityUnit.fromStorageValue(unit)
