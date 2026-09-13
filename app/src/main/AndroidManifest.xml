@@ -7,6 +7,9 @@
         android:name="android.hardware.camera"
         android:required="false" />
 
+    <!-- Recherche d'un produit scanné sur Open Food Facts (identification uniquement, pas de backend). -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <!-- Runtime-requested on API 33+ before enabling expiration notifications (see SettingsScreen). -->
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

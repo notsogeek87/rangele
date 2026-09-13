@@ -53,6 +53,9 @@ class FakeInventoryRepository(
     override suspend fun findPotentialMatch(name: String): ProductEntity? =
         ProductNameMatcher.findBestMatch(name, products.value) { it.name }
 
+    override suspend fun findByBarcode(barcode: String): ProductEntity? =
+        products.value.firstOrNull { it.barcode == barcode }
+
     override suspend fun insertAsNew(
         name: String,
         quantity: Double,
@@ -61,6 +64,7 @@ class FakeInventoryRepository(
         category: String?,
         lowStockThreshold: Double?,
         opened: Boolean,
+        barcode: String?,
     ): Long {
         val id = nextId++
         products.value = products.value +
@@ -73,6 +77,7 @@ class FakeInventoryRepository(
                 category = category,
                 lowStockThreshold = lowStockThreshold,
                 opened = opened,
+                barcode = barcode,
             )
         return id
     }

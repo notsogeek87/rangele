@@ -10,6 +10,8 @@ room = "2.6.1"
 navigationCompose = "2.8.5"
 camerax = "1.4.1"
 mlkitTextRecognition = "16.0.1"
+mlkitBarcodeScanning = "17.3.0"
+coil = "2.7.0"
 kotlinxCoroutines = "1.9.0"
 appcompat = "1.7.0"
 material = "1.12.0"
@@ -56,6 +58,9 @@ androidx-camera-lifecycle = { group = "androidx.camera", name = "camera-lifecycl
 androidx-camera-view = { group = "androidx.camera", name = "camera-view", version.ref = "camerax" }
 
 mlkit-text-recognition = { group = "com.google.mlkit", name = "text-recognition", version.ref = "mlkitTextRecognition" }
+mlkit-barcode-scanning = { group = "com.google.mlkit", name = "barcode-scanning", version.ref = "mlkitBarcodeScanning" }
+
+coil-compose = { group = "io.coil-kt", name = "coil-compose", version.ref = "coil" }
 
 kotlinx-coroutines-android = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-android", version.ref = "kotlinxCoroutines" }
 kotlinx-coroutines-play-services = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "kotlinxCoroutines" }

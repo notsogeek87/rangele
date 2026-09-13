@@ -21,6 +21,9 @@ interface InventoryRepository {
     /** Returns an existing product likely to be the same item as [name], if any. */
     suspend fun findPotentialMatch(name: String): ProductEntity?
 
+    /** Returns the product already carrying this exact [barcode], if any. */
+    suspend fun findByBarcode(barcode: String): ProductEntity?
+
     /** Creates a brand new row, ignoring any existing similar product. */
     suspend fun insertAsNew(
         name: String,
@@ -30,6 +33,7 @@ interface InventoryRepository {
         category: String? = null,
         lowStockThreshold: Double? = null,
         opened: Boolean = false,
+        barcode: String? = null,
     ): Long
 
     /** Adds [quantity] to an already-existing product's stock. */

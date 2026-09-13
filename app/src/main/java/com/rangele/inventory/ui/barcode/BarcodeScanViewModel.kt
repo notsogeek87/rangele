@@ -1,0 +1,152 @@
+package com.rangele.inventory.ui.barcode
+
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
+import com.rangele.inventory.barcode.OffLookupResult
+import com.rangele.inventory.barcode.OffProduct
+import com.rangele.inventory.barcode.OpenFoodFactsClient
+import com.rangele.inventory.data.local.entity.ProductEntity
+import com.rangele.inventory.data.model.QuantityUnit
+import com.rangele.inventory.data.repository.CategoryRepository
+import com.rangele.inventory.data.repository.InventoryRepository
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.launch
+
+/** Where the barcode flow currently stands, from the camera preview through to a resolved lookup. */
+sealed interface BarcodeLookupState {
+    data object Scanning : BarcodeLookupState
+
+    data object Loading : BarcodeLookupState
+
+    data class Found(val product: OffProduct) : BarcodeLookupState
+
+    /** The scanned barcode already matches a product in the inventory: offer to bump its quantity instead. */
+    data class AlreadyInInventory(val existing: ProductEntity) : BarcodeLookupState
+
+    data class NotFound(val barcode: String) : BarcodeLookupState
+
+    data class Error(val barcode: String) : BarcodeLookupState
+}
+
+data class BarcodeUiState(
+    val lookup: BarcodeLookupState = BarcodeLookupState.Scanning,
+    val name: String = "",
+    val quantityText: String = "1",
+    val unit: QuantityUnit = QuantityUnit.PIECE,
+    val category: String? = null,
+    val availableCategories: List<String> = emptyList(),
+    val isSaved: Boolean = false,
+) {
+    val enteredQuantity: Double? get() = quantityText.replace(',', '.').toDoubleOrNull()
+    val canSave: Boolean get() = name.isNotBlank() && (enteredQuantity?.let { it > 0 } == true)
+}
+
+class BarcodeScanViewModel(
+    private val inventoryRepository: InventoryRepository,
+    private val categoryRepository: CategoryRepository,
+    private val openFoodFactsClient: OpenFoodFactsClient,
+) : ViewModel() {
+    private val _uiState = MutableStateFlow(BarcodeUiState())
+    val uiState: StateFlow<BarcodeUiState> = _uiState.asStateFlow()
+
+    private var pendingBarcode: String? = null
+
+    init {
+        viewModelScope.launch {
+            categoryRepository.observeCategories().collect { categories ->
+                _uiState.update { it.copy(availableCategories = categories.map { category -> category.name }) }
+            }
+        }
+    }
+
+    /** Called for every detected frame; ignored once a scan is already being resolved or shown. */
+    fun onBarcodeDetected(barcode: String) {
+        if (_uiState.value.lookup !is BarcodeLookupState.Scanning) return
+        pendingBarcode = barcode
+        _uiState.update { it.copy(lookup = BarcodeLookupState.Loading) }
+        viewModelScope.launch {
+            val existing = inventoryRepository.findByBarcode(barcode)
+            if (existing != null) {
+                _uiState.update { it.copy(lookup = BarcodeLookupState.AlreadyInInventory(existing)) }
+                return@launch
+            }
+            when (val result = openFoodFactsClient.lookupProduct(barcode)) {
+                is OffLookupResult.Found -> {
+                    val state = _uiState.value
+                    _uiState.update {
+                        it.copy(
+                            lookup = BarcodeLookupState.Found(result.product),
+                            name = result.product.name,
+                            category = result.product.category?.takeIf { c -> c in state.availableCategories },
+                        )
+                    }
+                }
+                is OffLookupResult.NotFound ->
+                    _uiState.update { it.copy(lookup = BarcodeLookupState.NotFound(barcode), name = "") }
+                OffLookupResult.NetworkError ->
+                    _uiState.update { it.copy(lookup = BarcodeLookupState.Error(barcode)) }
+            }
+        }
+    }
+
+    fun onNameChanged(name: String) {
+        _uiState.update { it.copy(name = name) }
+    }
+
+    fun onQuantityTextChanged(text: String) {
+        _uiState.update { it.copy(quantityText = text) }
+    }
+
+    fun onUnitChanged(unit: QuantityUnit) {
+        _uiState.update { it.copy(unit = unit) }
+    }
+
+    fun onCategoryChanged(category: String?) {
+        _uiState.update { it.copy(category = category) }
+    }
+
+    /** Confirms adding the found (or manually-filled, when not found) product to the inventory. */
+    fun onSaveClicked() {
+        val state = _uiState.value
+        val quantity = state.enteredQuantity ?: return
+        val barcode = pendingBarcode ?: return
+        if (!state.canSave) return
+        viewModelScope.launch {
+            inventoryRepository.insertAsNew(
+                name = state.name.trim(),
+                quantity = quantity,
+                unit = state.unit,
+                category = state.category,
+                barcode = barcode,
+            )
+            _uiState.update { it.copy(isSaved = true) }
+        }
+    }
+
+    /** +/- on the "already present" screen, one step of the product's own unit — same as the inventory list. */
+    fun onAdjustExistingQuantity(delta: Double) {
+        val existing = (_uiState.value.lookup as? BarcodeLookupState.AlreadyInInventory)?.existing ?: return
+        viewModelScope.launch {
+            inventoryRepository.adjustQuantity(existing.id, delta)
+            val refreshed = inventoryRepository.getById(existing.id) ?: return@launch
+            _uiState.update { it.copy(lookup = BarcodeLookupState.AlreadyInInventory(refreshed)) }
+        }
+    }
+
+    /** Re-runs the Open Food Facts lookup for the barcode already scanned, after a network error. */
+    fun onRetryLookup() {
+        val barcode = pendingBarcode ?: return
+        _uiState.update { it.copy(lookup = BarcodeLookupState.Scanning) }
+        onBarcodeDetected(barcode)
+    }
+
+    fun onRetryScan() {
+        pendingBarcode = null
+        _uiState.update {
+            BarcodeUiState(lookup = BarcodeLookupState.Scanning, availableCategories = it.availableCategories)
+        }
+    }
+}
