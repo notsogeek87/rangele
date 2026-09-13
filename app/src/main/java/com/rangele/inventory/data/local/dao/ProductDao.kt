@@ -51,6 +51,9 @@ interface ProductDao {
         newName: String,
     )
 
+    @Query("UPDATE products SET pantry_id = NULL WHERE pantry_id = :pantryId")
+    suspend fun clearPantry(pantryId: Long)
+
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(product: ProductEntity): Long
 

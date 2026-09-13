@@ -38,10 +38,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.ocr.ParsedReceiptLine
 import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.OpenedCheckbox
+import com.rangele.inventory.ui.components.PantryDropdown
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
 import java.time.LocalDate
@@ -132,6 +134,7 @@ fun ReceiptReviewScreen(
                         items(uiState.lines, key = { it.id }) { line ->
                             ReceiptLineRow(
                                 line = line,
+                                availablePantries = uiState.availablePantries,
                                 onNameChanged = { viewModel.onLineNameChanged(line.id, it) },
                                 onQuantityTextChanged = { viewModel.onLineQuantityTextChanged(line.id, it) },
                                 onUnitChanged = { viewModel.onLineUnitChanged(line.id, it) },
@@ -140,6 +143,7 @@ fun ReceiptReviewScreen(
                                 onRemove = { viewModel.onLineRemoved(line.id) },
                                 onExpirationDateChanged = { viewModel.onLineExpirationDateChanged(line.id, it) },
                                 onOpenedChanged = { viewModel.onLineOpenedChanged(line.id, it) },
+                                onPantryChanged = { viewModel.onLinePantryChanged(line.id, it) },
                             )
                         }
                     }
@@ -151,6 +155,7 @@ fun ReceiptReviewScreen(
 @Composable
 private fun ReceiptLineRow(
     line: ParsedReceiptLine,
+    availablePantries: List<PantryEntity>,
     onNameChanged: (String) -> Unit,
     onQuantityTextChanged: (String) -> Unit,
     onUnitChanged: (QuantityUnit) -> Unit,
@@ -159,6 +164,7 @@ private fun ReceiptLineRow(
     onRemove: () -> Unit,
     onExpirationDateChanged: (LocalDate?) -> Unit,
     onOpenedChanged: (Boolean) -> Unit,
+    onPantryChanged: (Long?) -> Unit,
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -213,6 +219,13 @@ private fun ReceiptLineRow(
                 opened = line.opened,
                 onOpenedChanged = onOpenedChanged,
                 modifier = Modifier.padding(start = 40.dp, top = 4.dp),
+            )
+
+            PantryDropdown(
+                pantries = availablePantries,
+                selectedPantryId = line.pantryId,
+                onPantrySelected = onPantryChanged,
+                modifier = Modifier.fillMaxWidth().padding(start = 48.dp, top = 4.dp),
             )
 
             if (line.matchedProductName != null) {

@@ -33,6 +33,9 @@ data class ProductEntity(
     val opened: Boolean = false,
     /** Code-barres scanné (EAN/UPC), utilisé pour reconnaître le produit lors d'un futur scan. */
     val barcode: String? = null,
+    /** Placard du produit (voir [com.rangele.inventory.data.local.entity.PantryEntity]), null si non assigné. */
+    @ColumnInfo(name = "pantry_id")
+    val pantryId: Long? = null,
 ) {
     val quantityUnit: QuantityUnit
         get() = QuantityUnit.fromStorageValue(unit)

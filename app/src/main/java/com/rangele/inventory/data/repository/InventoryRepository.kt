@@ -34,6 +34,7 @@ interface InventoryRepository {
         lowStockThreshold: Double? = null,
         opened: Boolean = false,
         barcode: String? = null,
+        pantryId: Long? = null,
     ): Long
 
     /** Adds [quantity] to an already-existing product's stock. */

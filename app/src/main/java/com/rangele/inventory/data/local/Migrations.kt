@@ -47,3 +47,20 @@ val MIGRATION_3_4 =
             db.execSQL("CREATE INDEX IF NOT EXISTS index_products_barcode ON products (barcode)")
         }
     }
+
+/** Ajoute les placards (gérés dans les Paramètres) et le placard assigné à chaque produit. */
+val MIGRATION_4_5 =
+    object : Migration(4, 5) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS pantries (" +
+                    "id INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "name TEXT NOT NULL, " +
+                    "is_default INTEGER NOT NULL DEFAULT 0)",
+            )
+            db.execSQL(
+                "CREATE UNIQUE INDEX IF NOT EXISTS index_pantries_name ON pantries (name)",
+            )
+            db.execSQL("ALTER TABLE products ADD COLUMN pantry_id INTEGER")
+        }
+    }

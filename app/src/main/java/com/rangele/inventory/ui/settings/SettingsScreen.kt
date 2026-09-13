@@ -6,19 +6,30 @@ import android.content.pm.PackageManager
 import android.os.Build
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
@@ -38,6 +49,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.rangele.inventory.data.local.entity.PantryEntity
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +60,9 @@ fun SettingsScreen(
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
     var showTimeDialog by remember { mutableStateOf(false) }
+    var showCreatePantryDialog by remember { mutableStateOf(false) }
+    var pantryPendingRename by remember { mutableStateOf<PantryEntity?>(null) }
+    var pantryPendingDelete by remember { mutableStateOf<PantryEntity?>(null) }
 
     val permissionLauncher =
         rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
@@ -71,7 +86,14 @@ fun SettingsScreen(
             )
         },
     ) { paddingValues ->
-        Column(modifier = Modifier.fillMaxSize().padding(paddingValues).padding(16.dp)) {
+        Column(
+            modifier =
+                Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .padding(16.dp)
+                    .verticalScroll(rememberScrollState()),
+        ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -134,6 +156,75 @@ fun SettingsScreen(
                     Text("%02d:%02d".format(uiState.hour, uiState.minute))
                 }
             }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Placards",
+                    style = MaterialTheme.typography.bodyLarge,
+                    modifier = Modifier.weight(1f),
+                )
+                TextButton(onClick = { showCreatePantryDialog = true }) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.padding(end = 4.dp))
+                    Text("Ajouter")
+                }
+            }
+
+            if (uiState.pantries.isEmpty()) {
+                Text(
+                    "Aucun placard pour le moment.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            } else {
+                Text(
+                    "Sélectionnez le placard préselectionné à l'ajout d'un produit.",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 4.dp, bottom = 8.dp),
+                )
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    uiState.pantries.forEach { pantry ->
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline),
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(
+                                    selected = pantry.isDefault,
+                                    onClick = {
+                                        viewModel.onSetDefaultPantry(if (pantry.isDefault) null else pantry.id)
+                                    },
+                                )
+                                Text(
+                                    pantry.name,
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                IconButton(onClick = { pantryPendingRename = pantry }) {
+                                    Icon(Icons.Default.Edit, contentDescription = "Renommer")
+                                }
+                                IconButton(onClick = { pantryPendingDelete = pantry }) {
+                                    Icon(
+                                        Icons.Default.Delete,
+                                        contentDescription = "Supprimer",
+                                        tint = MaterialTheme.colorScheme.error,
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 
@@ -145,6 +236,47 @@ fun SettingsScreen(
             onConfirm = { hour, minute ->
                 viewModel.onTimeChanged(hour, minute)
                 showTimeDialog = false
+            },
+        )
+    }
+
+    if (showCreatePantryDialog) {
+        PantryNameDialog(
+            title = "Nouveau placard",
+            initialName = "",
+            onDismiss = { showCreatePantryDialog = false },
+            onConfirm = { name ->
+                viewModel.onCreatePantry(name)
+                showCreatePantryDialog = false
+            },
+        )
+    }
+
+    pantryPendingRename?.let { pantry ->
+        PantryNameDialog(
+            title = "Renommer « ${pantry.name} »",
+            initialName = pantry.name,
+            onDismiss = { pantryPendingRename = null },
+            onConfirm = { name ->
+                viewModel.onRenamePantry(pantry, name)
+                pantryPendingRename = null
+            },
+        )
+    }
+
+    pantryPendingDelete?.let { pantry ->
+        AlertDialog(
+            onDismissRequest = { pantryPendingDelete = null },
+            title = { Text("Supprimer « ${pantry.name} » ?") },
+            text = { Text("Les produits de ce placard resteront dans l'inventaire, sans placard.") },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.onDeletePantry(pantry)
+                    pantryPendingDelete = null
+                }) { Text("Supprimer") }
+            },
+            dismissButton = {
+                TextButton(onClick = { pantryPendingDelete = null }) { Text("Annuler") }
             },
         )
     }
@@ -171,6 +303,35 @@ private fun NotificationTimeDialog(
         text = { TimePicker(state = state) },
         confirmButton = {
             TextButton(onClick = { onConfirm(state.hour, state.minute) }) { Text("OK") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Annuler") }
+        },
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PantryNameDialog(
+    title: String,
+    initialName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf(initialName) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(title) },
+        text = {
+            OutlinedTextField(
+                value = text,
+                onValueChange = { text = it },
+                singleLine = true,
+                label = { Text("Nom") },
+            )
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) { Text("Valider") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Annuler") }
