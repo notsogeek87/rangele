@@ -135,6 +135,13 @@ class InventoryViewModel(
         viewModelScope.launch { repository.updateDetails(product.id, expirationDate, opened) }
     }
 
+    fun onLowStockThresholdUpdated(
+        product: ProductEntity,
+        lowStockThreshold: Double?,
+    ) {
+        viewModelScope.launch { repository.updateLowStockThreshold(product.id, lowStockThreshold) }
+    }
+
     /** Loads the items of [productId] for the edit dialog to show. */
     fun onEditDialogOpened(productId: Long) {
         viewModelScope.launch { _editingItems.value = repository.getItems(productId) }
