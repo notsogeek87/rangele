@@ -3,6 +3,7 @@ package com.rangele.inventory.testutil
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.data.repository.InventoryRepository
+import com.rangele.inventory.data.repository.ItemDetails
 import com.rangele.inventory.util.ProductNameMatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,12 +18,13 @@ class FakeInventoryRepository(
     private var nextId = (initialProducts.maxOfOrNull { it.id } ?: 0L) + 1
     private val products = MutableStateFlow(initialProducts)
 
-    /** Item dates per product id, mirroring `product_items` for discrete-unit products only. */
+    /** Items per product id, mirroring `product_items` for discrete-unit products only. */
     private val items =
         initialProducts
             .filter { it.quantityUnit.tracksItems }
             .associateTo(mutableMapOf()) { product ->
-                product.id to MutableList(product.quantity.roundToInt().coerceAtLeast(0)) { product.expirationDate }
+                val item = ItemDetails(product.expirationDate, product.opened)
+                product.id to MutableList(product.quantity.roundToInt().coerceAtLeast(0)) { item }
             }
 
     override fun observeProducts(
@@ -91,7 +93,8 @@ class FakeInventoryRepository(
                 pantryId = pantryId,
             )
         if (unit.tracksItems) {
-            items[id] = MutableList(quantity.roundToInt().coerceAtLeast(0)) { expirationDate }
+            val item = ItemDetails(expirationDate, opened)
+            items[id] = MutableList(quantity.roundToInt().coerceAtLeast(0)) { item }
         }
         return id
     }
@@ -103,13 +106,15 @@ class FakeInventoryRepository(
     ) {
         val existing = getById(productId) ?: return
         val newQuantity = existing.quantity + addedQuantity
-        val cachedExpirationDate =
+        val summary =
             if (existing.quantityUnit.tracksItems) {
                 syncItemsToQuantity(productId, newQuantity, newItemExpirationDate = expirationDate)
             } else {
-                existing.expirationDate
+                ItemsSummary(existing.expirationDate, existing.opened)
             }
-        replace(productId) { it.copy(quantity = newQuantity, expirationDate = cachedExpirationDate) }
+        replace(productId) {
+            it.copy(quantity = newQuantity, expirationDate = summary.soonestExpirationDate, opened = summary.anyOpened)
+        }
     }
 
     override suspend fun setQuantity(
@@ -123,13 +128,15 @@ class FakeInventoryRepository(
             products.value = products.value.filterNot { it.id == productId }
             return
         }
-        val cachedExpirationDate =
+        val summary =
             if (existing.quantityUnit.tracksItems) {
                 syncItemsToQuantity(productId, newQuantity)
             } else {
-                existing.expirationDate
+                ItemsSummary(existing.expirationDate, existing.opened)
             }
-        replace(productId) { it.copy(quantity = newQuantity, expirationDate = cachedExpirationDate) }
+        replace(productId) {
+            it.copy(quantity = newQuantity, expirationDate = summary.soonestExpirationDate, opened = summary.anyOpened)
+        }
     }
 
     override suspend fun adjustQuantity(
@@ -153,27 +160,25 @@ class FakeInventoryRepository(
         products.value = products.value.filterNot { it.id == productId }
     }
 
-    override suspend fun getItemExpirationDates(productId: Long): List<Long?> =
-        items[productId]?.toList() ?: emptyList()
+    override suspend fun getItems(productId: Long): List<ItemDetails> = items[productId]?.toList() ?: emptyList()
 
     override suspend fun saveItems(
         productId: Long,
-        expirationDates: List<Long?>,
-        opened: Boolean,
+        items: List<ItemDetails>,
     ) {
         getById(productId) ?: return
-        val newQuantity = expirationDates.size.toDouble()
+        val newQuantity = items.size.toDouble()
         if (newQuantity == 0.0) {
-            items.remove(productId)
+            this.items.remove(productId)
             products.value = products.value.filterNot { it.id == productId }
             return
         }
-        items[productId] = expirationDates.toMutableList()
+        this.items[productId] = items.toMutableList()
         replace(productId) {
             it.copy(
                 quantity = newQuantity,
-                expirationDate = expirationDates.filterNotNull().minOrNull(),
-                opened = opened,
+                expirationDate = items.mapNotNull { item -> item.expirationDate }.minOrNull(),
+                opened = items.any { item -> item.opened },
             )
         }
     }
@@ -183,18 +188,28 @@ class FakeInventoryRepository(
         productId: Long,
         targetQuantity: Double,
         newItemExpirationDate: Long? = null,
-    ): Long? {
+    ): ItemsSummary {
         val current = items.getOrPut(productId) { mutableListOf() }
         val targetCount = targetQuantity.roundToInt().coerceAtLeast(0)
         when {
-            targetCount > current.size -> repeat(targetCount - current.size) { current.add(newItemExpirationDate) }
+            targetCount > current.size ->
+                repeat(targetCount - current.size) { current.add(ItemDetails(newItemExpirationDate, opened = false)) }
             targetCount < current.size -> {
-                val removalOrder = current.sortedWith(compareBy({ it == null }, { it }))
+                val removalOrder =
+                    current.sortedWith(compareBy({ it.expirationDate == null }, { it.expirationDate }))
                 removalOrder.take(current.size - targetCount).forEach { current.remove(it) }
             }
         }
-        return current.filterNotNull().minOrNull()
+        return ItemsSummary(
+            soonestExpirationDate = current.mapNotNull { it.expirationDate }.minOrNull(),
+            anyOpened = current.any { it.opened },
+        )
     }
+
+    private data class ItemsSummary(
+        val soonestExpirationDate: Long?,
+        val anyOpened: Boolean,
+    )
 
     private fun replace(
         productId: Long,

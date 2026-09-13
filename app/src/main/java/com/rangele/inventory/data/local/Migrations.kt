@@ -104,3 +104,21 @@ val MIGRATION_5_6 =
                 }
         }
     }
+
+/**
+ * Passe le statut "entamé" au niveau de chaque article plutôt que du produit entier : chaque
+ * article existant reprend le statut "entamé" du produit auquel il appartenait. `products.opened`
+ * reste ensuite calculé automatiquement comme "au moins un article entamé" pour un produit en
+ * unité discrète (voir InventoryRepositoryImpl) — inchangé par cette migration — et demeure la
+ * seule source pour les produits en unité continue (poids/volume), qui n'ont pas d'article.
+ */
+val MIGRATION_6_7 =
+    object : Migration(6, 7) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE product_items ADD COLUMN opened INTEGER NOT NULL DEFAULT 0")
+            db.execSQL(
+                "UPDATE product_items SET opened = 1 " +
+                    "WHERE product_id IN (SELECT id FROM products WHERE opened = 1)",
+            )
+        }
+    }

@@ -119,6 +119,7 @@ private fun ProductItemEntity.toJson(): JSONObject =
         put("id", id)
         put("productId", productId)
         put("expirationDate", expirationDate ?: JSONObject.NULL)
+        put("opened", opened)
     }
 
 private fun JSONObject.toProductItemEntity(): ProductItemEntity =
@@ -126,6 +127,8 @@ private fun JSONObject.toProductItemEntity(): ProductItemEntity =
         id = getLong("id"),
         productId = getLong("productId"),
         expirationDate = if (isNull("expirationDate")) null else getLong("expirationDate"),
+        // Absent from backups made before per-item opened status existed.
+        opened = has("opened") && getBoolean("opened"),
     )
 
 private fun HistoryEntryEntity.toJson(): JSONObject =

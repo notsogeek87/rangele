@@ -68,18 +68,23 @@ interface InventoryRepository {
     suspend fun deleteProduct(productId: Long)
 
     /**
-     * The individual expiration date of each unit in stock for a discrete-unit product (one entry
-     * per unit, `null` where untracked). Empty for a continuous-unit product.
+     * One entry per unit in stock of a discrete-unit product, each with its own expiration date
+     * and opened status. Empty for a continuous-unit product.
      */
-    suspend fun getItemExpirationDates(productId: Long): List<Long?>
+    suspend fun getItems(productId: Long): List<ItemDetails>
 
     /**
-     * Replaces a discrete-unit product's items with [expirationDates] (one entry per unit): its
-     * quantity becomes `expirationDates.size`, and [opened] is updated alongside.
+     * Replaces a discrete-unit product's items with [items] (one entry per unit): its quantity
+     * becomes `items.size`.
      */
     suspend fun saveItems(
         productId: Long,
-        expirationDates: List<Long?>,
-        opened: Boolean,
+        items: List<ItemDetails>,
     )
 }
+
+/** One unit in stock of a discrete-unit product (see [ProductEntity.quantityUnit]). */
+data class ItemDetails(
+    val expirationDate: Long?,
+    val opened: Boolean,
+)
