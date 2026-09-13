@@ -3,7 +3,6 @@ package com.rangele.inventory.ui.barcode
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -12,9 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -22,7 +19,6 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -34,6 +30,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -92,8 +91,7 @@ fun BarcodeResultScreen(
                 is BarcodeLookupState.AlreadyInInventory ->
                     AlreadyInInventoryContent(
                         existing = lookup.existing,
-                        onDecrement = { viewModel.onAdjustExistingQuantity(-lookup.existing.quantityUnit.step) },
-                        onIncrement = { viewModel.onAdjustExistingQuantity(lookup.existing.quantityUnit.step) },
+                        onAdjust = viewModel::onAdjustExistingQuantity,
                         onDone = onDone,
                     )
 
@@ -138,42 +136,78 @@ private fun CenteredMessage(content: @Composable () -> Unit) {
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AlreadyInInventoryContent(
     existing: ProductEntity,
-    onDecrement: () -> Unit,
-    onIncrement: () -> Unit,
+    onAdjust: (Double) -> Unit,
     onDone: () -> Unit,
 ) {
-    CenteredMessage {
+    var addText by remember(existing.id) { mutableStateOf("") }
+    var removeText by remember(existing.id) { mutableStateOf("") }
+    val addAmount = addText.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
+    val removeAmount = removeText.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
+
+    Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         Text(
-            "Produit déjà présent — ajouter une unité ?",
+            "Produit déjà présent",
             style = MaterialTheme.typography.headlineSmall,
-            modifier = Modifier.padding(bottom = 16.dp),
+            modifier = Modifier.padding(bottom = 8.dp),
         )
         Text(existing.name, style = MaterialTheme.typography.bodyLarge)
+        Text(
+            "Nombre actuel : ${formatPlainQuantity(existing.quantity)} ${existing.quantityUnit.label}",
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
+        )
 
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(top = 16.dp)) {
-            IconButton(
-                onClick = onDecrement,
-                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-            ) {
-                Icon(Icons.Default.Remove, contentDescription = "Diminuer la quantité")
-            }
-            Text(
-                text = "${formatPlainQuantity(existing.quantity)} ${existing.quantityUnit.label}",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(horizontal = 12.dp),
-            )
-            IconButton(
-                onClick = onIncrement,
-                colors = IconButtonDefaults.iconButtonColors(contentColor = MaterialTheme.colorScheme.primary),
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Augmenter la quantité")
-            }
+        OutlinedTextField(
+            value = addText,
+            onValueChange = { addText = it },
+            label = { Text("Combien en ajouter ?") },
+            suffix = { Text(existing.quantityUnit.label) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Button(
+            onClick = {
+                addAmount?.let {
+                    onAdjust(it)
+                    addText = ""
+                }
+            },
+            enabled = addAmount != null,
+            shape = ShapeSmall,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp),
+        ) {
+            Text("Ajouter")
         }
 
-        Button(onClick = onDone, shape = ShapeSmall, modifier = Modifier.padding(top = 24.dp)) {
+        OutlinedTextField(
+            value = removeText,
+            onValueChange = { removeText = it },
+            label = { Text("Combien retirer ?") },
+            suffix = { Text(existing.quantityUnit.label) },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Button(
+            onClick = {
+                removeAmount?.let {
+                    onAdjust(-it)
+                    removeText = ""
+                }
+            },
+            enabled = removeAmount != null,
+            shape = ShapeSmall,
+            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        ) {
+            Text("Retirer")
+        }
+
+        TextButton(onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp)) {
             Text("Terminé")
         }
     }
