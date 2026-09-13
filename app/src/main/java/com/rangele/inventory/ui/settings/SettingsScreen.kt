@@ -246,7 +246,7 @@ private fun needsNotificationPermission(context: Context): Boolean {
 
 private fun defaultBackupFileName(): String {
     val date = DateTimeFormatter.ofPattern("yyyy-MM-dd").format(Instant.now().atZone(ZoneId.systemDefault()))
-    return "rangele_sauvegarde_$date.json"
+    return "yakwa-$date.json"
 }
 
 private fun formatLastBackup(timestamp: Long?): String {
