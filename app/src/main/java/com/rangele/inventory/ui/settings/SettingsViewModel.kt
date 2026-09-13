@@ -1,16 +1,21 @@
 package com.rangele.inventory.ui.settings
 
+import android.content.ContentResolver
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rangele.inventory.backup.BackupRepository
 import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.repository.PantryRepository
 import com.rangele.inventory.data.settings.SettingsRepository
 import com.rangele.inventory.work.ExpirationCheckScheduler
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.stateIn
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 data class SettingsUiState(
@@ -19,16 +24,41 @@ data class SettingsUiState(
     val hour: Int = 9,
     val minute: Int = 0,
     val pantries: List<PantryEntity> = emptyList(),
+    val lastBackupAt: Long? = null,
+    val backupInProgress: Boolean = false,
+    val backupMessage: String? = null,
+)
+
+private data class BackupOpState(
+    val inProgress: Boolean = false,
+    val message: String? = null,
 )
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val pantryRepository: PantryRepository,
     private val scheduler: ExpirationCheckScheduler,
+    private val backupRepository: BackupRepository,
 ) : ViewModel() {
+    private val backupState = MutableStateFlow(BackupOpState())
+
     val uiState: StateFlow<SettingsUiState> =
-        combine(settingsRepository.settings, pantryRepository.observePantries()) { settings, pantries ->
-            SettingsUiState(settings.enabled, settings.delayDays, settings.hour, settings.minute, pantries)
+        combine(
+            settingsRepository.settings,
+            pantryRepository.observePantries(),
+            settingsRepository.lastBackupTimestamp,
+            backupState,
+        ) { settings, pantries, lastBackupAt, backupOp ->
+            SettingsUiState(
+                notificationsEnabled = settings.enabled,
+                delayDays = settings.delayDays,
+                hour = settings.hour,
+                minute = settings.minute,
+                pantries = pantries,
+                lastBackupAt = lastBackupAt,
+                backupInProgress = backupOp.inProgress,
+                backupMessage = backupOp.message,
+            )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
     /** Called once the caller confirmed (or didn't need) the POST_NOTIFICATIONS permission. */
@@ -76,5 +106,52 @@ class SettingsViewModel(
 
     fun onSetDefaultPantry(pantryId: Long?) {
         viewModelScope.launch { pantryRepository.setDefaultPantry(pantryId) }
+    }
+
+    /** [uri] comes from the ACTION_CREATE_DOCUMENT picker, so it may point at Google Drive, Files, etc. */
+    fun onExportRequested(
+        contentResolver: ContentResolver,
+        uri: Uri,
+    ) {
+        viewModelScope.launch {
+            backupState.value = BackupOpState(inProgress = true)
+            val message =
+                try {
+                    val stream =
+                        contentResolver.openOutputStream(uri)
+                            ?: error("Impossible d'ouvrir le fichier de destination")
+                    stream.use { backupRepository.exportTo(it) }
+                    settingsRepository.setLastBackupTimestamp(System.currentTimeMillis())
+                    "Sauvegarde enregistrée."
+                } catch (e: Exception) {
+                    "Échec de la sauvegarde : ${e.message}"
+                }
+            backupState.value = BackupOpState(message = message)
+        }
+    }
+
+    fun onImportRequested(
+        contentResolver: ContentResolver,
+        uri: Uri,
+    ) {
+        viewModelScope.launch {
+            backupState.value = BackupOpState(inProgress = true)
+            val message =
+                try {
+                    val stream =
+                        contentResolver.openInputStream(uri)
+                            ?: error("Impossible de lire le fichier sélectionné")
+                    val result = stream.use { backupRepository.importFrom(it) }
+                    "Sauvegarde restaurée : ${result.products} produit(s), " +
+                        "${result.categories} catégorie(s), ${result.historyEntries} entrée(s) d'historique."
+                } catch (e: Exception) {
+                    "Échec de la restauration : ${e.message}"
+                }
+            backupState.value = BackupOpState(message = message)
+        }
+    }
+
+    fun onBackupMessageShown() {
+        backupState.update { it.copy(message = null) }
     }
 }

@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.intPreferencesKey
+import androidx.datastore.preferences.core.longPreferencesKey
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -39,10 +40,18 @@ class SettingsRepositoryImpl(
         }
     }
 
+    override val lastBackupTimestamp: Flow<Long?> =
+        dataStore.data.map { prefs -> prefs[Keys.LAST_BACKUP_AT] }
+
+    override suspend fun setLastBackupTimestamp(timestamp: Long) {
+        dataStore.edit { it[Keys.LAST_BACKUP_AT] = timestamp }
+    }
+
     private object Keys {
         val ENABLED = booleanPreferencesKey("notifications_enabled")
         val DELAY_DAYS = intPreferencesKey("expiration_delay_days")
         val HOUR = intPreferencesKey("notification_hour")
         val MINUTE = intPreferencesKey("notification_minute")
+        val LAST_BACKUP_AT = longPreferencesKey("last_backup_at")
     }
 }

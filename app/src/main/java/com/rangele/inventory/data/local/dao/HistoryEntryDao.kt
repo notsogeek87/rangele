@@ -16,4 +16,11 @@ interface HistoryEntryDao {
 
     @Insert
     suspend fun insert(entry: HistoryEntryEntity)
+
+    /** Used when restoring a backup: replaces the whole table with [entries] (see BackupRepository). */
+    @Query("DELETE FROM history_entries")
+    suspend fun deleteAll()
+
+    @Insert
+    suspend fun insertAll(entries: List<HistoryEntryEntity>)
 }

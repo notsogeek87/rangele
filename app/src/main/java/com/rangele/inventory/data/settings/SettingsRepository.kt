@@ -13,4 +13,9 @@ interface SettingsRepository {
         hour: Int,
         minute: Int,
     )
+
+    /** Epoch millis of the last successful backup export, null if none yet. */
+    val lastBackupTimestamp: Flow<Long?>
+
+    suspend fun setLastBackupTimestamp(timestamp: Long)
 }
