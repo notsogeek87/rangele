@@ -302,8 +302,7 @@ fun InventoryScreen(
                         productPendingEdit = null
                     },
                     onConfirm = { items, lowStockThreshold ->
-                        viewModel.onItemsSaved(product, items)
-                        viewModel.onLowStockThresholdUpdated(product, lowStockThreshold)
+                        viewModel.onItemsSaved(product, items, lowStockThreshold)
                         viewModel.onEditDialogClosed()
                         productPendingEdit = null
                     },
@@ -314,9 +313,7 @@ fun InventoryScreen(
                 product = product,
                 onDismiss = { productPendingEdit = null },
                 onConfirm = { newQuantity, expirationDate, opened, lowStockThreshold ->
-                    viewModel.onQuantitySet(product, newQuantity)
-                    viewModel.onDetailsUpdated(product, expirationDate, opened)
-                    viewModel.onLowStockThresholdUpdated(product, lowStockThreshold)
+                    viewModel.onProductSheetSaved(product, newQuantity, expirationDate, opened, lowStockThreshold)
                     productPendingEdit = null
                 },
             )
