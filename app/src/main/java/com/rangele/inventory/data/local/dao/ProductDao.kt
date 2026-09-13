@@ -62,4 +62,11 @@ interface ProductDao {
 
     @Delete
     suspend fun delete(product: ProductEntity)
+
+    /** Used when restoring a backup: replaces the whole table with [products] (see BackupRepository). */
+    @Query("DELETE FROM products")
+    suspend fun deleteAll()
+
+    @Insert
+    suspend fun insertAll(products: List<ProductEntity>)
 }

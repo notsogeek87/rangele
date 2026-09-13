@@ -2,6 +2,8 @@ package com.rangele.inventory
 
 import android.content.Context
 import androidx.room.Room
+import com.rangele.inventory.backup.BackupRepository
+import com.rangele.inventory.backup.BackupRepositoryImpl
 import com.rangele.inventory.barcode.OpenFoodFactsClient
 import com.rangele.inventory.barcode.OpenFoodFactsClientImpl
 import com.rangele.inventory.data.local.AppDatabase
@@ -58,6 +60,8 @@ class AppContainer(
     val historyRepository: HistoryRepository = HistoryRepositoryImpl(database.historyEntryDao())
 
     val settingsRepository: SettingsRepository = SettingsRepositoryImpl(appContext.settingsDataStore)
+
+    val backupRepository: BackupRepository = BackupRepositoryImpl(database)
 
     val receiptTextRecognizer: ReceiptTextRecognizer = ReceiptTextRecognizer()
 

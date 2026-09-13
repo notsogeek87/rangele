@@ -24,4 +24,11 @@ interface CategoryDao {
 
     @Query("DELETE FROM categories WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    /** Used when restoring a backup: replaces the whole table with [categories] (see BackupRepository). */
+    @Query("DELETE FROM categories")
+    suspend fun deleteAll()
+
+    @Insert
+    suspend fun insertAll(categories: List<CategoryEntity>)
 }
