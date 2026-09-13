@@ -21,14 +21,22 @@ sealed interface BarcodeLookupState {
 
     data object Loading : BarcodeLookupState
 
-    data class Found(val product: OffProduct) : BarcodeLookupState
+    data class Found(
+        val product: OffProduct,
+    ) : BarcodeLookupState
 
     /** The scanned barcode already matches a product in the inventory: offer to bump its quantity instead. */
-    data class AlreadyInInventory(val existing: ProductEntity) : BarcodeLookupState
+    data class AlreadyInInventory(
+        val existing: ProductEntity,
+    ) : BarcodeLookupState
 
-    data class NotFound(val barcode: String) : BarcodeLookupState
+    data class NotFound(
+        val barcode: String,
+    ) : BarcodeLookupState
 
-    data class Error(val barcode: String) : BarcodeLookupState
+    data class Error(
+        val barcode: String,
+    ) : BarcodeLookupState
 }
 
 data class BarcodeUiState(

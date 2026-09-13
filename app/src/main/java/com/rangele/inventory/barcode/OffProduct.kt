@@ -13,9 +13,13 @@ data class OffProduct(
 
 /** Résultat d'une recherche de produit par code-barres sur Open Food Facts. */
 sealed interface OffLookupResult {
-    data class Found(val product: OffProduct) : OffLookupResult
+    data class Found(
+        val product: OffProduct,
+    ) : OffLookupResult
 
-    data class NotFound(val barcode: String) : OffLookupResult
+    data class NotFound(
+        val barcode: String,
+    ) : OffLookupResult
 
     data object NetworkError : OffLookupResult
 }
