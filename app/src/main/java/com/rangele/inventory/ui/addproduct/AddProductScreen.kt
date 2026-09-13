@@ -141,17 +141,17 @@ fun AddProductScreen(
                 Text(
                     "« ${existing.name} » est déjà dans votre inventaire " +
                         "(${formatPlain(existing.quantity)} ${existing.quantityUnit.label}). " +
-                        "Voulez-vous ajouter la quantité saisie à ce produit, ou créer une entrée séparée ?",
+                        "Voulez-vous ajouter ou retirer la quantité saisie ?",
                 )
             },
             confirmButton = {
                 TextButton(onClick = viewModel::onConfirmMergeIntoExisting) {
-                    Text("Ajouter au stock existant")
+                    Text("Ajouter")
                 }
             },
             dismissButton = {
-                TextButton(onClick = viewModel::onCreateSeparateProduct) {
-                    Text("Créer un nouveau produit")
+                TextButton(onClick = viewModel::onRemoveFromExisting) {
+                    Text("Retirer")
                 }
             },
         )

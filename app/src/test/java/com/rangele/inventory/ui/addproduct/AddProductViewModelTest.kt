@@ -77,7 +77,7 @@ class AddProductViewModelTest {
         }
 
     @Test
-    fun `creating a separate product keeps both entries`() =
+    fun `removing subtracts the quantity from the existing product`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository =
                 FakeInventoryRepository(
@@ -90,9 +90,11 @@ class AddProductViewModelTest {
             viewModel.onQuantityTextChanged("2")
             viewModel.onSaveClicked()
 
-            viewModel.onCreateSeparateProduct()
+            viewModel.onRemoveFromExisting()
 
-            assertEquals(2, repository.getAllOnce().size)
+            assertEquals(1, repository.getAllOnce().size)
+            assertEquals(2.0, repository.getAllOnce().first().quantity, 0.0)
+            assertEquals(true, viewModel.uiState.value.isSaved)
         }
 
     @Test
