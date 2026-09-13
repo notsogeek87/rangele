@@ -1,6 +1,7 @@
 package com.rangele.inventory.barcode
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import java.io.IOException
@@ -22,6 +23,12 @@ class OpenFoodFactsClientImpl : OpenFoodFactsClient {
     override suspend fun lookupProduct(barcode: String): OffLookupResult =
         withContext(Dispatchers.IO) {
             runCatching { parseOffResponse(barcode, fetch(barcode)) }
+                .recoverCatching {
+                    // Transient blips (DNS hiccup, brief timeout) are common on mobile networks;
+                    // one retry after a short pause avoids surfacing an error the user would just retry themselves.
+                    delay(RETRY_DELAY_MILLIS)
+                    parseOffResponse(barcode, fetch(barcode))
+                }
                 .getOrElse { OffLookupResult.NetworkError }
         }
 
@@ -45,8 +52,12 @@ class OpenFoodFactsClientImpl : OpenFoodFactsClient {
     private companion object {
         const val BASE_URL = "https://world.openfoodfacts.org/api/v2/product/"
         const val FIELDS = "code,product_name,brands,quantity,categories,image_front_url,image_url"
-        const val USER_AGENT = "Rangele-Android/1.0"
-        const val TIMEOUT_MILLIS = 10_000
+
+        // Open Food Facts asks clients to identify themselves with app name, version and a contact/link;
+        // a missing or generic User-Agent is treated as abusive traffic and can be throttled or blocked.
+        const val USER_AGENT = "Rangele-Android/1.0 (+https://github.com/notsogeek87/rangele)"
+        const val TIMEOUT_MILLIS = 15_000
+        const val RETRY_DELAY_MILLIS = 1_500L
     }
 }
 
