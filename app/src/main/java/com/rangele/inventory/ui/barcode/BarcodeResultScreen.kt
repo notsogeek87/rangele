@@ -38,6 +38,7 @@ import coil.compose.AsyncImage
 import com.rangele.inventory.barcode.OffProduct
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.ui.components.CategoryDropdown
+import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.PantryDropdown
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
@@ -89,7 +90,7 @@ fun BarcodeResultScreen(
                 is BarcodeLookupState.AlreadyInInventory ->
                     AlreadyInInventoryContent(
                         existing = lookup.existing,
-                        onAdjust = viewModel::onAdjustExistingQuantity,
+                        viewModel = viewModel,
                     )
 
                 is BarcodeLookupState.Found ->
@@ -136,8 +137,10 @@ private fun CenteredMessage(content: @Composable () -> Unit) {
 @Composable
 private fun AlreadyInInventoryContent(
     existing: ProductEntity,
-    onAdjust: (Double) -> Unit,
+    viewModel: BarcodeScanViewModel,
 ) {
+    val uiState by viewModel.uiState.collectAsState()
+
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         Text(
             "Produit déjà présent",
@@ -148,11 +151,18 @@ private fun AlreadyInInventoryContent(
         Text(
             "Nombre actuel : ${formatPlainQuantity(existing.quantity)} ${existing.quantityUnit.label}",
             style = MaterialTheme.typography.bodyMedium,
-            modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
+            modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+        )
+
+        ExpirationDateField(
+            date = uiState.expirationDate,
+            onDateChanged = viewModel::onExpirationDateChanged,
+            modifier = Modifier.fillMaxWidth().padding(bottom = 24.dp),
+            label = "Date de péremption du nouvel article (optionnel)",
         )
 
         Button(
-            onClick = { onAdjust(existing.quantityUnit.step) },
+            onClick = { viewModel.onAdjustExistingQuantity(existing.quantityUnit.step) },
             shape = ShapeSmall,
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         ) {
@@ -160,7 +170,7 @@ private fun AlreadyInInventoryContent(
         }
 
         Button(
-            onClick = { onAdjust(-existing.quantityUnit.step) },
+            onClick = { viewModel.onAdjustExistingQuantity(-existing.quantityUnit.step) },
             shape = ShapeSmall,
             modifier = Modifier.fillMaxWidth(),
         ) {
@@ -245,6 +255,12 @@ private fun ProductForm(
         UnitDropdown(
             selectedUnit = uiState.unit,
             onUnitSelected = viewModel::onUnitChanged,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        )
+
+        ExpirationDateField(
+            date = uiState.expirationDate,
+            onDateChanged = viewModel::onExpirationDateChanged,
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
         )
 

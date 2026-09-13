@@ -47,7 +47,7 @@ class MigrationTest {
             val database =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, databaseName)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
                     .allowMainThreadQueries()
                     .build()
 
@@ -66,8 +66,37 @@ class MigrationTest {
                 assertNull(product.barcode)
                 assertNull(product.pantryId)
 
+                // Unité discrète sans date : deux articles sont créés, mais sans date à reporter.
+                val items = database.productItemDao().getForProduct(product.id)
+                assertEquals(2, items.size)
+                assertTrue(items.all { it.expirationDate == null })
+
                 assertTrue(database.historyEntryDao().getAllOnce().isEmpty())
                 assertTrue(database.pantryDao().getAllOnce().isEmpty())
+            } finally {
+                database.close()
+            }
+        }
+
+    @Test
+    fun `a discrete product with an expiration date backfills that date onto each of its items`() =
+        runTest {
+            createVersion5Database(expirationDate = 5000L)
+
+            val database =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, databaseName)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5, MIGRATION_5_6)
+                    .allowMainThreadQueries()
+                    .build()
+
+            try {
+                val product = database.productDao().getAllOnce().first()
+                assertEquals(5000L, product.expirationDate)
+
+                val items = database.productItemDao().getForProduct(product.id)
+                assertEquals(2, items.size)
+                assertTrue(items.all { it.expirationDate == 5000L })
             } finally {
                 database.close()
             }
@@ -91,6 +120,50 @@ class MigrationTest {
                     "VALUES (1, 'Riz basmati', 2.0, 'PIECE', 1000)",
             )
             database.version = 1
+        }
+    }
+
+    /** The full schema as of version 5 (just before per-item dates), with one discrete-unit product. */
+    private fun createVersion5Database(expirationDate: Long?) {
+        val databaseFile = context.getDatabasePath(databaseName)
+        databaseFile.parentFile?.mkdirs()
+        SQLiteDatabase.openOrCreateDatabase(databaseFile, null).use { database ->
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `products` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`quantity` REAL NOT NULL, " +
+                    "`unit` TEXT NOT NULL, " +
+                    "`updated_at` INTEGER NOT NULL, " +
+                    "`expiration_date` INTEGER, " +
+                    "`category` TEXT, " +
+                    "`low_stock_threshold` REAL, " +
+                    "`opened` INTEGER NOT NULL DEFAULT 0, " +
+                    "`barcode` TEXT, " +
+                    "`pantry_id` INTEGER)",
+            )
+            database.execSQL("CREATE INDEX IF NOT EXISTS `index_products_barcode` ON `products` (`barcode`)")
+            database.execSQL(
+                "INSERT INTO products (id, name, quantity, unit, updated_at, expiration_date) " +
+                    "VALUES (1, 'Riz basmati', 2.0, 'PIECE', 1000, ${expirationDate ?: "NULL"})",
+            )
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `categories` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL)",
+            )
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_categories_name` ON `categories` (`name`)")
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `history_entries` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `product_name` TEXT NOT NULL, " +
+                    "`quantity_removed` REAL NOT NULL, `unit` TEXT NOT NULL, `timestamp` INTEGER NOT NULL)",
+            )
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `pantries` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, " +
+                    "`is_default` INTEGER NOT NULL DEFAULT 0)",
+            )
+            database.execSQL("CREATE UNIQUE INDEX IF NOT EXISTS `index_pantries_name` ON `pantries` (`name`)")
+            database.version = 5
         }
     }
 }

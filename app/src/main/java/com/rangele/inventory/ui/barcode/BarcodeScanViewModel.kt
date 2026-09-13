@@ -11,11 +11,13 @@ import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.InventoryRepository
 import com.rangele.inventory.data.repository.PantryRepository
+import com.rangele.inventory.util.toEpochMillis
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 /** Where the barcode flow currently stands, from the camera preview through to a resolved lookup. */
 sealed interface BarcodeLookupState {
@@ -46,6 +48,7 @@ data class BarcodeUiState(
     val name: String = "",
     val quantityText: String = "1",
     val unit: QuantityUnit = QuantityUnit.PIECE,
+    val expirationDate: LocalDate? = null,
     val category: String? = null,
     val availableCategories: List<String> = emptyList(),
     val pantryId: Long? = null,
@@ -130,6 +133,10 @@ class BarcodeScanViewModel(
         _uiState.update { it.copy(unit = unit) }
     }
 
+    fun onExpirationDateChanged(date: LocalDate?) {
+        _uiState.update { it.copy(expirationDate = date) }
+    }
+
     fun onCategoryChanged(category: String?) {
         _uiState.update { it.copy(category = category) }
     }
@@ -150,6 +157,7 @@ class BarcodeScanViewModel(
                 name = state.name.trim(),
                 quantity = quantity,
                 unit = state.unit,
+                expirationDate = state.expirationDate?.toEpochMillis(),
                 category = state.category,
                 barcode = barcode,
                 pantryId = state.pantryId,
@@ -158,11 +166,19 @@ class BarcodeScanViewModel(
         }
     }
 
-    /** Ajouter/Retirer on the "already present" screen: one step of the product's own unit, then back to the list. */
+    /**
+     * Ajouter/Retirer on the "already present" screen: one step of the product's own unit, then
+     * back to the list. Adding tags the newly added unit(s) with the entered expiration date, if any.
+     */
     fun onAdjustExistingQuantity(delta: Double) {
         val existing = (_uiState.value.lookup as? BarcodeLookupState.AlreadyInInventory)?.existing ?: return
+        val expirationDate = _uiState.value.expirationDate?.toEpochMillis()
         viewModelScope.launch {
-            inventoryRepository.adjustQuantity(existing.id, delta)
+            if (delta > 0) {
+                inventoryRepository.incrementExisting(existing.id, delta, expirationDate)
+            } else {
+                inventoryRepository.adjustQuantity(existing.id, delta)
+            }
             _uiState.update { it.copy(isSaved = true) }
         }
     }

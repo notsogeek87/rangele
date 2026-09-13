@@ -54,6 +54,11 @@ class InventoryViewModel(
     /** True once pantries have loaded and none exist yet, until the user creates one or dismisses the prompt. */
     val showCreatePantryPrompt: StateFlow<Boolean> = _showCreatePantryPrompt.asStateFlow()
 
+    private val _editingItems = MutableStateFlow<List<Long?>?>(null)
+
+    /** Per-item expiration dates of the product currently open in the edit dialog, null while loading. */
+    val editingItems: StateFlow<List<Long?>?> = _editingItems.asStateFlow()
+
     init {
         viewModelScope.launch {
             pantryRepository.observePantries().collect { pantries ->
@@ -127,6 +132,23 @@ class InventoryViewModel(
         opened: Boolean,
     ) {
         viewModelScope.launch { repository.updateDetails(product.id, expirationDate, opened) }
+    }
+
+    /** Loads the per-item expiration dates of [productId] for the edit dialog to show. */
+    fun onEditDialogOpened(productId: Long) {
+        viewModelScope.launch { _editingItems.value = repository.getItemExpirationDates(productId) }
+    }
+
+    fun onEditDialogClosed() {
+        _editingItems.value = null
+    }
+
+    fun onItemsSaved(
+        product: ProductEntity,
+        expirationDates: List<Long?>,
+        opened: Boolean,
+    ) {
+        viewModelScope.launch { repository.saveItems(product.id, expirationDates, opened) }
     }
 
     fun onDelete(product: ProductEntity) {
