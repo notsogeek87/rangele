@@ -74,7 +74,9 @@ class ShoppingListViewModelTest {
                     "ZeroStockAtOneThreshold",
                     "ZeroStockAtZeroThreshold",
                 ),
-                viewModel.uiState.value.products.map { it.name }.toSet(),
+                viewModel.uiState.value.products
+                    .map { it.name }
+                    .toSet(),
             )
         }
 
