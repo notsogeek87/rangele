@@ -25,9 +25,13 @@ Fonctionnalités V3 (au-dessus du MVP) :
   produits qui l'utilisaient (ils redeviennent sans catégorie).
 - **Historique** : chaque retrait/suppression (pas les ajouts) journalisé et consultable dans un
   écran dédié, ordre chronologique inverse.
-- **Liste de courses suggérée** : écran listant les produits sous leur `lowStockThreshold`
-  (seuil optionnel par produit, comparé brut à la quantité — pas de conversion d'unité) ; les
-  produits cochés peuvent être partagés en texte simple via l'intent de partage Android.
+- **Liste de courses suggérée** : écran listant les produits dont la quantité est **inférieure ou
+  égale** à leur `lowStockThreshold` (comparaison brute, sans conversion d'unité ; un stock tombé à
+  zéro y figure donc aussi, et le produit reste dans l'inventaire au lieu d'être supprimé). Tout
+  nouveau produit reçoit `DEFAULT_LOW_STOCK_THRESHOLD` (= 1), quel que soit le mode d'ajout, pour
+  que la suggestion fonctionne sans réglage ; le seuil reste modifiable depuis la fiche produit, et
+  l'effacer exclut le produit des suggestions. Les produits cochés peuvent être partagés en texte
+  simple via l'intent de partage Android.
 - **Placards** : champ optionnel sur le produit, gérés (créer/renommer/supprimer, choix du
   placard par défaut) dans un écran dédié accessible depuis le menu « ⋮ » de l'inventaire ; le
   placard par défaut est présélectionné à chaque ajout de produit (manuel, scan de code-barres

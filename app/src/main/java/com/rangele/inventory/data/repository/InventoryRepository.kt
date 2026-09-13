@@ -4,6 +4,14 @@ import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import kotlinx.coroutines.flow.Flow
 
+/**
+ * Seuil de stock bas attribué à tout nouveau produit, quel que soit le mode d'ajout (manuel, scan
+ * de code-barres ou revue de ticket) : le produit est ainsi proposé en liste de courses dès qu'il
+ * n'en reste plus qu'une unité, sans réglage préalable. Il reste modifiable — ou effaçable, ce qui
+ * exclut définitivement le produit des suggestions — depuis sa fiche.
+ */
+const val DEFAULT_LOW_STOCK_THRESHOLD: Double = 1.0
+
 interface InventoryRepository {
     fun observeProducts(
         query: String = "",
@@ -31,7 +39,7 @@ interface InventoryRepository {
         unit: QuantityUnit,
         expirationDate: Long? = null,
         category: String? = null,
-        lowStockThreshold: Double? = null,
+        lowStockThreshold: Double? = DEFAULT_LOW_STOCK_THRESHOLD,
         opened: Boolean = false,
         barcode: String? = null,
         pantryId: Long? = null,
