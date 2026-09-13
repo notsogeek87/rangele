@@ -1,8 +1,8 @@
 package com.rangele.inventory.util
 
-import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Test
+import java.time.LocalDate
 
 class ExpirationStatusTest {
     private val today = LocalDate.of(2026, 9, 12)

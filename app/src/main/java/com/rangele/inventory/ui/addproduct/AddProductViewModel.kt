@@ -7,12 +7,12 @@ import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.InventoryRepository
 import com.rangele.inventory.util.toEpochMillis
-import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 data class AddProductUiState(
     val name: String = "",

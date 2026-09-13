@@ -8,8 +8,8 @@ import androidx.work.WorkerParameters
 import com.rangele.inventory.data.repository.InventoryRepository
 import com.rangele.inventory.data.settings.SettingsRepository
 import com.rangele.inventory.util.toLocalDate
-import java.time.LocalDate
 import kotlinx.coroutines.flow.first
+import java.time.LocalDate
 
 /** Runs once a day (see [ExpirationCheckScheduler]) to flag products expiring within the Settings delay. */
 class ExpirationCheckWorker(

@@ -26,7 +26,12 @@ class ExpirationCheckScheduler(
         minute: Int,
     ) {
         val now = LocalDateTime.now()
-        var next = now.withHour(hour).withMinute(minute).withSecond(0).withNano(0)
+        var next =
+            now
+                .withHour(hour)
+                .withMinute(minute)
+                .withSecond(0)
+                .withNano(0)
         if (!next.isAfter(now)) next = next.plusDays(1)
         val initialDelay = Duration.between(now, next).toMillis()
 

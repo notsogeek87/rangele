@@ -10,12 +10,12 @@ import com.rangele.inventory.ocr.ParsedReceiptLine
 import com.rangele.inventory.ocr.ReceiptParser
 import com.rangele.inventory.ocr.ReceiptTextRecognizer
 import com.rangele.inventory.util.toEpochMillis
-import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.time.LocalDate
 
 data class ScanUiState(
     val isProcessing: Boolean = false,

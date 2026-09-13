@@ -42,7 +42,11 @@ class ShoppingListViewModelTest {
             val viewModel = ShoppingListViewModel(repository)
             viewModel.uiState.launchIn(backgroundScope)
 
-            assertEquals(listOf("Lait"), viewModel.uiState.value.products.map { it.name })
+            assertEquals(
+                listOf("Lait"),
+                viewModel.uiState.value.products
+                    .map { it.name },
+            )
         }
 
     @Test
@@ -58,9 +62,15 @@ class ShoppingListViewModelTest {
             val viewModel = ShoppingListViewModel(repository)
             viewModel.uiState.launchIn(backgroundScope)
 
-            viewModel.onToggle(viewModel.uiState.value.products.first { it.name == "Lait" })
+            viewModel.onToggle(
+                viewModel.uiState.value.products
+                    .first { it.name == "Lait" },
+            )
 
             assertEquals("- Lait", viewModel.buildShareText())
-            assertTrue(viewModel.uiState.value.checkedProducts.none { it.name == "Beurre" })
+            assertTrue(
+                viewModel.uiState.value.checkedProducts
+                    .none { it.name == "Beurre" },
+            )
         }
 }
