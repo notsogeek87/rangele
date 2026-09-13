@@ -20,6 +20,7 @@ import com.rangele.inventory.ui.history.HistoryScreen
 import com.rangele.inventory.ui.history.HistoryViewModel
 import com.rangele.inventory.ui.inventory.InventoryScreen
 import com.rangele.inventory.ui.inventory.InventoryViewModel
+import com.rangele.inventory.ui.scan.ReceiptImportScreen
 import com.rangele.inventory.ui.scan.ReceiptReviewScreen
 import com.rangele.inventory.ui.scan.ScanCaptureScreen
 import com.rangele.inventory.ui.scan.ScanViewModel
@@ -49,6 +50,7 @@ fun RangeleNavHost(
                 viewModel = viewModel,
                 onAddProductClick = { navController.navigate(RangeleDestinations.ADD_PRODUCT) },
                 onScanReceiptClick = { navController.navigate(RangeleDestinations.SCAN_GRAPH) },
+                onImportReceiptClick = { navController.navigate(RangeleDestinations.SCAN_IMPORT) },
                 onCategoriesClick = { navController.navigate(RangeleDestinations.CATEGORIES) },
                 onHistoryClick = { navController.navigate(RangeleDestinations.HISTORY) },
                 onShoppingListClick = { navController.navigate(RangeleDestinations.SHOPPING_LIST) },
@@ -81,6 +83,21 @@ fun RangeleNavHost(
                     viewModel = scanViewModel,
                     onBackClick = { navController.popBackStack(RangeleDestinations.INVENTORY, inclusive = false) },
                     onCaptured = { navController.navigate(RangeleDestinations.SCAN_REVIEW) },
+                )
+            }
+
+            composable(RangeleDestinations.SCAN_IMPORT) { entry ->
+                val scanViewModel = rememberScanViewModel(navController, entry, container)
+                ReceiptImportScreen(
+                    viewModel = scanViewModel,
+                    // Dropped from the back stack: coming back from the review screen would otherwise
+                    // land here and immediately reopen the picker.
+                    onImported = {
+                        navController.navigate(RangeleDestinations.SCAN_REVIEW) {
+                            popUpTo(RangeleDestinations.SCAN_IMPORT) { inclusive = true }
+                        }
+                    },
+                    onCancelled = { navController.popBackStack(RangeleDestinations.INVENTORY, inclusive = false) },
                 )
             }
 

@@ -18,6 +18,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Remove
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SwapVert
@@ -69,6 +70,7 @@ fun InventoryScreen(
     viewModel: InventoryViewModel,
     onAddProductClick: () -> Unit,
     onScanReceiptClick: () -> Unit,
+    onImportReceiptClick: () -> Unit,
     onCategoriesClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onShoppingListClick: () -> Unit,
@@ -164,6 +166,14 @@ fun InventoryScreen(
                     text = { Text("Scanner un ticket") },
                     containerColor = MaterialTheme.colorScheme.secondary,
                     contentColor = MaterialTheme.colorScheme.onSecondary,
+                )
+                Spacer(Modifier.height(12.dp))
+                ExtendedFloatingActionButton(
+                    onClick = onImportReceiptClick,
+                    icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
+                    text = { Text("Importer un ticket") },
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                 )
                 Spacer(Modifier.height(12.dp))
                 FloatingActionButton(

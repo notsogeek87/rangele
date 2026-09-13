@@ -1,9 +1,7 @@
 package com.rangele.inventory.ui.scan
 
 import android.Manifest
-import android.app.Activity
 import android.content.Context
-import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.util.Log
@@ -84,22 +82,13 @@ fun ScanCaptureScreen(
     val imageCapture =
         remember { ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY).build() }
 
-    val galleryLauncher =
-        rememberLauncherForActivityResult(
-            ActivityResultContracts.StartActivityForResult(),
-        ) { result ->
-            val uri = result.data?.data
-            if (result.resultCode == Activity.RESULT_OK && uri != null) {
+    val onImportDocument =
+        rememberReceiptDocumentPicker(
+            onPicked = { uri ->
                 viewModel.onPhotoCaptured(context, uri)
                 onCaptured()
-            }
-        }
-    val onImportFromGallery = {
-        // ACTION_GET_CONTENT (plutôt qu'ACTION_PICK sur la seule galerie photo) laisse l'utilisateur
-        // chercher une image dans n'importe quelle app (Fichiers, Drive, WhatsApp...), pas seulement
-        // les albums de la galerie par défaut.
-        galleryLauncher.launch(Intent(Intent.ACTION_GET_CONTENT).setType("image/*"))
-    }
+            },
+        )
 
     Scaffold(
         topBar = {
@@ -151,11 +140,11 @@ fun ScanCaptureScreen(
                     modifier = Modifier.align(Alignment.BottomCenter).padding(24.dp),
                 ) {
                     SmallFloatingActionButton(
-                        onClick = onImportFromGallery,
+                        onClick = onImportDocument,
                         containerColor = MaterialTheme.colorScheme.secondaryContainer,
                         contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
                     ) {
-                        Icon(Icons.Default.PhotoLibrary, contentDescription = "Importer une photo déjà prise")
+                        Icon(Icons.Default.PhotoLibrary, contentDescription = "Importer un ticket (photo ou PDF)")
                     }
 
                     FloatingActionButton(
@@ -197,17 +186,17 @@ fun ScanCaptureScreen(
                         Text("Autoriser la caméra")
                     }
                     Text(
-                        text = "Ou importez directement une photo déjà prise :",
+                        text = "Ou importez un ticket déjà enregistré (photo ou PDF) :",
                         style = MaterialTheme.typography.bodyMedium,
                         modifier = Modifier.padding(top = 24.dp),
                     )
                     Button(
-                        onClick = onImportFromGallery,
+                        onClick = onImportDocument,
                         shape = ShapeSmall,
                         modifier = Modifier.padding(top = 8.dp),
                     ) {
                         Icon(Icons.Default.PhotoLibrary, contentDescription = null)
-                        Text(" Importer depuis la galerie")
+                        Text(" Importer un fichier")
                     }
                 }
 
