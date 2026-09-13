@@ -103,6 +103,10 @@ Points de configuration Gradle notables :
 - Versions et coordonnées de dépendances centralisées dans `gradle/libs.versions.toml` (version
   catalog) — ajouter toute nouvelle dépendance là plutôt qu'en dur dans `app/build.gradle.kts`.
 - Le build type `debug` a un `applicationIdSuffix = ".debug"` pour cohabiter avec une install release.
+- Le keystore de debug (`app/debug.keystore`) est **versionné** et référencé par `signingConfigs.debug`.
+  Sans lui, un runner CI neuf n'a pas de `~/.android/debug.keystore`, AGP en génère un aléatoire à
+  chaque build, et deux APK successifs ne peuvent pas s'installer l'un par-dessus l'autre. Ce n'est pas
+  un secret (mots de passe standard `android`/`androiddebugkey`) ; les builds release ne l'utilisent pas.
 - Deux product flavors sur la dimension `env` : `staging` (`applicationIdSuffix = ".staging"`,
   nom d'app "Yakwa Staging") et `production` (identité par défaut, pas de suffixe). Le nom
   `production` est utilisé plutôt que `main` pour éviter la collision avec le source set réservé

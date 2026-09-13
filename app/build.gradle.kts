@@ -21,6 +21,20 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    // Le keystore de debug est versionné pour que tous les builds partagent la même signature : un
+    // runner CI neuf n'a pas de ~/.android/debug.keystore, AGP en génère alors un aléatoire à chaque
+    // build, et deux APK ainsi signés ne peuvent pas s'installer l'un par-dessus l'autre (il faut
+    // désinstaller). Mots de passe volontairement publics, ce sont ceux du keystore de debug standard
+    // d'Android ; les builds release, eux, n'utilisent pas cette configuration.
+    signingConfigs {
+        getByName("debug") {
+            storeFile = file("debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
