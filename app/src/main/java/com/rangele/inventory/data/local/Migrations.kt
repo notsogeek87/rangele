@@ -86,20 +86,21 @@ val MIGRATION_5_6 =
                 "CREATE INDEX IF NOT EXISTS index_product_items_product_id ON product_items (product_id)",
             )
 
-            db.query(
-                "SELECT id, quantity, expiration_date FROM products WHERE unit IN ('PIECE', 'PACKAGE')",
-            ).use { cursor ->
-                while (cursor.moveToNext()) {
-                    val productId = cursor.getLong(0)
-                    val expirationDate = if (cursor.isNull(2)) null else cursor.getLong(2)
-                    val itemCount = Math.round(cursor.getDouble(1)).toInt().coerceAtLeast(0)
-                    repeat(itemCount) {
-                        db.execSQL(
-                            "INSERT INTO product_items (product_id, expiration_date) VALUES (?, ?)",
-                            arrayOf<Any?>(productId, expirationDate),
-                        )
+            db
+                .query(
+                    "SELECT id, quantity, expiration_date FROM products WHERE unit IN ('PIECE', 'PACKAGE')",
+                ).use { cursor ->
+                    while (cursor.moveToNext()) {
+                        val productId = cursor.getLong(0)
+                        val expirationDate = if (cursor.isNull(2)) null else cursor.getLong(2)
+                        val itemCount = Math.round(cursor.getDouble(1)).toInt().coerceAtLeast(0)
+                        repeat(itemCount) {
+                            db.execSQL(
+                                "INSERT INTO product_items (product_id, expiration_date) VALUES (?, ?)",
+                                arrayOf<Any?>(productId, expirationDate),
+                            )
+                        }
                     }
                 }
-            }
         }
     }
