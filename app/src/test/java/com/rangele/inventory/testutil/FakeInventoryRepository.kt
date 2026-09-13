@@ -8,6 +8,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 /** In-memory stand-in for [InventoryRepository], used to unit test ViewModels without Room. */
 class FakeInventoryRepository(
@@ -15,6 +16,14 @@ class FakeInventoryRepository(
 ) : InventoryRepository {
     private var nextId = (initialProducts.maxOfOrNull { it.id } ?: 0L) + 1
     private val products = MutableStateFlow(initialProducts)
+
+    /** Item dates per product id, mirroring `product_items` for discrete-unit products only. */
+    private val items =
+        initialProducts
+            .filter { it.quantityUnit.tracksItems }
+            .associateTo(mutableMapOf()) { product ->
+                product.id to MutableList(product.quantity.roundToInt().coerceAtLeast(0)) { product.expirationDate }
+            }
 
     override fun observeProducts(
         query: String,
@@ -81,26 +90,46 @@ class FakeInventoryRepository(
                 barcode = barcode,
                 pantryId = pantryId,
             )
+        if (unit.tracksItems) {
+            items[id] = MutableList(quantity.roundToInt().coerceAtLeast(0)) { expirationDate }
+        }
         return id
     }
 
     override suspend fun incrementExisting(
         productId: Long,
         addedQuantity: Double,
+        expirationDate: Long?,
     ) {
-        replace(productId) { it.copy(quantity = it.quantity + addedQuantity) }
+        val existing = getById(productId) ?: return
+        val newQuantity = existing.quantity + addedQuantity
+        val cachedExpirationDate =
+            if (existing.quantityUnit.tracksItems) {
+                syncItemsToQuantity(productId, newQuantity, newItemExpirationDate = expirationDate)
+            } else {
+                existing.expirationDate
+            }
+        replace(productId) { it.copy(quantity = newQuantity, expirationDate = cachedExpirationDate) }
     }
 
     override suspend fun setQuantity(
         productId: Long,
         quantity: Double,
     ) {
+        val existing = getById(productId) ?: return
         val newQuantity = max(0.0, quantity)
         if (newQuantity == 0.0) {
+            items.remove(productId)
             products.value = products.value.filterNot { it.id == productId }
-        } else {
-            replace(productId) { it.copy(quantity = newQuantity) }
+            return
         }
+        val cachedExpirationDate =
+            if (existing.quantityUnit.tracksItems) {
+                syncItemsToQuantity(productId, newQuantity)
+            } else {
+                existing.expirationDate
+            }
+        replace(productId) { it.copy(quantity = newQuantity, expirationDate = cachedExpirationDate) }
     }
 
     override suspend fun adjustQuantity(
@@ -120,7 +149,51 @@ class FakeInventoryRepository(
     }
 
     override suspend fun deleteProduct(productId: Long) {
+        items.remove(productId)
         products.value = products.value.filterNot { it.id == productId }
+    }
+
+    override suspend fun getItemExpirationDates(productId: Long): List<Long?> =
+        items[productId]?.toList() ?: emptyList()
+
+    override suspend fun saveItems(
+        productId: Long,
+        expirationDates: List<Long?>,
+        opened: Boolean,
+    ) {
+        getById(productId) ?: return
+        val newQuantity = expirationDates.size.toDouble()
+        if (newQuantity == 0.0) {
+            items.remove(productId)
+            products.value = products.value.filterNot { it.id == productId }
+            return
+        }
+        items[productId] = expirationDates.toMutableList()
+        replace(productId) {
+            it.copy(
+                quantity = newQuantity,
+                expirationDate = expirationDates.filterNotNull().minOrNull(),
+                opened = opened,
+            )
+        }
+    }
+
+    /** Mirrors [com.rangele.inventory.data.repository.InventoryRepositoryImpl]'s FEFO sync. */
+    private fun syncItemsToQuantity(
+        productId: Long,
+        targetQuantity: Double,
+        newItemExpirationDate: Long? = null,
+    ): Long? {
+        val current = items.getOrPut(productId) { mutableListOf() }
+        val targetCount = targetQuantity.roundToInt().coerceAtLeast(0)
+        when {
+            targetCount > current.size -> repeat(targetCount - current.size) { current.add(newItemExpirationDate) }
+            targetCount < current.size -> {
+                val removalOrder = current.sortedWith(compareBy({ it == null }, { it }))
+                removalOrder.take(current.size - targetCount).forEach { current.remove(it) }
+            }
+        }
+        return current.filterNotNull().minOrNull()
     }
 
     private fun replace(
@@ -130,3 +203,6 @@ class FakeInventoryRepository(
         products.value = products.value.map { if (it.id == productId) transform(it) else it }
     }
 }
+
+/** Mirrors [com.rangele.inventory.data.repository.InventoryRepositoryImpl]'s per-item tracking rule. */
+private val QuantityUnit.tracksItems: Boolean get() = step == 1.0

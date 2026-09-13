@@ -5,6 +5,7 @@ import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.local.entity.CategoryEntity
 import com.rangele.inventory.data.local.entity.HistoryEntryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
+import com.rangele.inventory.data.local.entity.ProductItemEntity
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.InputStream
@@ -18,6 +19,7 @@ class BackupRepositoryImpl(
         val products = database.productDao().getAllOnce()
         val categories = database.categoryDao().getAllOnce()
         val history = database.historyEntryDao().getAllOnce()
+        val productItems = database.productItemDao().getAllOnce()
 
         val root =
             JSONObject().apply {
@@ -26,6 +28,7 @@ class BackupRepositoryImpl(
                 put("products", JSONArray(products.map { it.toJson() }))
                 put("categories", JSONArray(categories.map { it.toJson() }))
                 put("history", JSONArray(history.map { it.toJson() }))
+                put("productItems", JSONArray(productItems.map { it.toJson() }))
             }
         output.write(root.toString().toByteArray(StandardCharsets.UTF_8))
         output.flush()
@@ -36,15 +39,24 @@ class BackupRepositoryImpl(
         val products = root.getJSONArray("products").toEntityList { it.toProductEntity() }
         val categories = root.getJSONArray("categories").toEntityList { it.toCategoryEntity() }
         val history = root.getJSONArray("history").toEntityList { it.toHistoryEntryEntity() }
+        // Absent from backups made before per-item expiration dates existed.
+        val productItems =
+            if (root.has("productItems")) {
+                root.getJSONArray("productItems").toEntityList { it.toProductItemEntity() }
+            } else {
+                emptyList()
+            }
 
         database.withTransaction {
             database.productDao().deleteAll()
             database.categoryDao().deleteAll()
             database.historyEntryDao().deleteAll()
+            database.productItemDao().deleteAll()
 
             database.categoryDao().insertAll(categories)
             database.productDao().insertAll(products)
             database.historyEntryDao().insertAll(history)
+            database.productItemDao().insertAll(productItems)
         }
 
         return BackupImportResult(
@@ -100,6 +112,20 @@ private fun JSONObject.toCategoryEntity(): CategoryEntity =
     CategoryEntity(
         id = getLong("id"),
         name = getString("name"),
+    )
+
+private fun ProductItemEntity.toJson(): JSONObject =
+    JSONObject().apply {
+        put("id", id)
+        put("productId", productId)
+        put("expirationDate", expirationDate ?: JSONObject.NULL)
+    }
+
+private fun JSONObject.toProductItemEntity(): ProductItemEntity =
+    ProductItemEntity(
+        id = getLong("id"),
+        productId = getLong("productId"),
+        expirationDate = if (isNull("expirationDate")) null else getLong("expirationDate"),
     )
 
 private fun HistoryEntryEntity.toJson(): JSONObject =

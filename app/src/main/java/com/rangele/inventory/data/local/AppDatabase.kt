@@ -6,14 +6,22 @@ import com.rangele.inventory.data.local.dao.CategoryDao
 import com.rangele.inventory.data.local.dao.HistoryEntryDao
 import com.rangele.inventory.data.local.dao.PantryDao
 import com.rangele.inventory.data.local.dao.ProductDao
+import com.rangele.inventory.data.local.dao.ProductItemDao
 import com.rangele.inventory.data.local.entity.CategoryEntity
 import com.rangele.inventory.data.local.entity.HistoryEntryEntity
 import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
+import com.rangele.inventory.data.local.entity.ProductItemEntity
 
 @Database(
-    entities = [ProductEntity::class, CategoryEntity::class, HistoryEntryEntity::class, PantryEntity::class],
-    version = 5,
+    entities = [
+        ProductEntity::class,
+        CategoryEntity::class,
+        HistoryEntryEntity::class,
+        PantryEntity::class,
+        ProductItemEntity::class,
+    ],
+    version = 6,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {
@@ -24,6 +32,8 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun historyEntryDao(): HistoryEntryDao
 
     abstract fun pantryDao(): PantryDao
+
+    abstract fun productItemDao(): ProductItemDao
 
     companion object {
         const val DATABASE_NAME = "rangele.db"

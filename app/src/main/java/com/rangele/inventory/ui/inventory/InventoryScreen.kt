@@ -9,12 +9,16 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
 import androidx.compose.material.icons.filled.MoreVert
@@ -43,6 +47,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -281,15 +286,35 @@ fun InventoryScreen(
     }
 
     productPendingEdit?.let { product ->
-        EditProductDialog(
-            product = product,
-            onDismiss = { productPendingEdit = null },
-            onConfirm = { newQuantity, expirationDate, opened ->
-                viewModel.onQuantitySet(product, newQuantity)
-                viewModel.onDetailsUpdated(product, expirationDate, opened)
-                productPendingEdit = null
-            },
-        )
+        if (product.quantityUnit.step == 1.0) {
+            val editingItems by viewModel.editingItems.collectAsState()
+            LaunchedEffect(product.id) { viewModel.onEditDialogOpened(product.id) }
+            editingItems?.let { items ->
+                EditItemsDialog(
+                    product = product,
+                    items = items,
+                    onDismiss = {
+                        viewModel.onEditDialogClosed()
+                        productPendingEdit = null
+                    },
+                    onConfirm = { expirationDates, opened ->
+                        viewModel.onItemsSaved(product, expirationDates, opened)
+                        viewModel.onEditDialogClosed()
+                        productPendingEdit = null
+                    },
+                )
+            }
+        } else {
+            EditQuantityDialog(
+                product = product,
+                onDismiss = { productPendingEdit = null },
+                onConfirm = { newQuantity, expirationDate, opened ->
+                    viewModel.onQuantitySet(product, newQuantity)
+                    viewModel.onDetailsUpdated(product, expirationDate, opened)
+                    productPendingEdit = null
+                },
+            )
+        }
     }
 
     productPendingDelete?.let { product ->
@@ -428,9 +453,10 @@ private fun expirationColor(status: ExpirationStatus): Color =
         ExpirationStatus.OK, ExpirationStatus.NONE -> MaterialTheme.colorScheme.onSurfaceVariant
     }
 
+/** Edits quantity, expiration date and opened status of a product in a continuous unit (weight/volume). */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun EditProductDialog(
+private fun EditQuantityDialog(
     product: ProductEntity,
     onDismiss: () -> Unit,
     onConfirm: (quantity: Double, expirationDate: Long?, opened: Boolean) -> Unit,
@@ -467,6 +493,71 @@ private fun EditProductDialog(
                     onConfirm(quantity, expirationDate?.toEpochMillis(), opened)
                 }
             }) { Text("Enregistrer") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Annuler") }
+        },
+    )
+}
+
+/**
+ * Edits a discrete-unit product (pièce/paquet): one row per unit in stock, each with its own
+ * optional expiration date, instead of a single date shared by the whole quantity. Adding or
+ * removing a row changes the quantity; the product must be deleted from the list to reach zero.
+ */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun EditItemsDialog(
+    product: ProductEntity,
+    items: List<Long?>,
+    onDismiss: () -> Unit,
+    onConfirm: (expirationDates: List<Long?>, opened: Boolean) -> Unit,
+) {
+    var itemDates by remember(product.id) { mutableStateOf(items.ifEmpty { listOf(null) }.map { it?.toLocalDate() }) }
+    var opened by remember(product.id) { mutableStateOf(product.opened) }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Modifier ${product.name}") },
+        text = {
+            Column(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
+                Text(
+                    "${itemDates.size} ${product.quantityUnit.label}",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                itemDates.forEachIndexed { index, date ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp),
+                    ) {
+                        ExpirationDateField(
+                            date = date,
+                            onDateChanged = { newDate ->
+                                itemDates = itemDates.toMutableList().also { it[index] = newDate }
+                            },
+                            modifier = Modifier.weight(1f),
+                            label = "Article ${index + 1}",
+                        )
+                        IconButton(
+                            onClick = { itemDates = itemDates.toMutableList().also { it.removeAt(index) } },
+                            enabled = itemDates.size > 1,
+                        ) {
+                            Icon(Icons.Default.Close, contentDescription = "Retirer cet article")
+                        }
+                    }
+                }
+                TextButton(onClick = { itemDates = itemDates + null }, modifier = Modifier.padding(top = 4.dp)) {
+                    Text("+ Ajouter un article")
+                }
+                OpenedCheckbox(
+                    opened = opened,
+                    onOpenedChanged = { opened = it },
+                    modifier = Modifier.padding(top = 4.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(itemDates.map { it?.toEpochMillis() }, opened) }) { Text("Enregistrer") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Annuler") }
