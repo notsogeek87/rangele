@@ -69,7 +69,11 @@ fun RangeleNavHost(
                     factory =
                         viewModelFactory {
                             initializer {
-                                AddProductViewModel(container.inventoryRepository, container.categoryRepository)
+                                AddProductViewModel(
+                                    container.inventoryRepository,
+                                    container.categoryRepository,
+                                    container.pantryRepository,
+                                )
                             }
                         },
                 )
@@ -175,6 +179,7 @@ fun RangeleNavHost(
                             initializer {
                                 SettingsViewModel(
                                     container.settingsRepository,
+                                    container.pantryRepository,
                                     container.expirationCheckScheduler,
                                     container.backupRepository,
                                 )
@@ -201,6 +206,7 @@ private fun rememberBarcodeScanViewModel(
                     BarcodeScanViewModel(
                         container.inventoryRepository,
                         container.categoryRepository,
+                        container.pantryRepository,
                         container.openFoodFactsClient,
                     )
                 }
@@ -224,6 +230,7 @@ private fun rememberScanViewModel(
                         container.inventoryRepository,
                         container.receiptTextRecognizer,
                         container.receiptParser,
+                        container.pantryRepository,
                     )
                 }
             },

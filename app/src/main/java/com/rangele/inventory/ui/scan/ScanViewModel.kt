@@ -4,8 +4,10 @@ import android.content.Context
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.data.repository.InventoryRepository
+import com.rangele.inventory.data.repository.PantryRepository
 import com.rangele.inventory.ocr.ParsedReceiptLine
 import com.rangele.inventory.ocr.ReceiptParser
 import com.rangele.inventory.ocr.ReceiptTextRecognizer
@@ -24,6 +26,7 @@ data class ScanUiState(
     val hasResults: Boolean = false,
     val isImported: Boolean = false,
     val error: String? = null,
+    val availablePantries: List<PantryEntity> = emptyList(),
 ) {
     val includedCount: Int get() = lines.count { it.included }
 }
@@ -32,9 +35,18 @@ class ScanViewModel(
     private val repository: InventoryRepository,
     private val textRecognizer: ReceiptTextRecognizer,
     private val receiptParser: ReceiptParser,
+    private val pantryRepository: PantryRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(ScanUiState())
     val uiState: StateFlow<ScanUiState> = _uiState.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            pantryRepository.observePantries().collect { pantries ->
+                _uiState.update { it.copy(availablePantries = pantries) }
+            }
+        }
+    }
 
     fun onPhotoCaptured(
         context: Context,
@@ -42,14 +54,16 @@ class ScanViewModel(
     ) {
         _uiState.update { it.copy(capturedImageUri = uri, isProcessing = true, error = null) }
         viewModelScope.launch {
+            val defaultPantryId = _uiState.value.availablePantries.firstOrNull { it.isDefault }?.id
             runCatching {
                 val text = textRecognizer.recognizeText(context, uri)
                 receiptParser.parse(text).map { line ->
                     val match = repository.findPotentialMatch(line.name)
+                    val withPantry = line.copy(pantryId = defaultPantryId)
                     if (match != null) {
-                        line.copy(matchedProductId = match.id, matchedProductName = match.name)
+                        withPantry.copy(matchedProductId = match.id, matchedProductName = match.name)
                     } else {
-                        line
+                        withPantry
                     }
                 }
             }.onSuccess { lines ->
@@ -112,6 +126,13 @@ class ScanViewModel(
         updateLine(lineId) { it.copy(opened = opened) }
     }
 
+    fun onLinePantryChanged(
+        lineId: String,
+        pantryId: Long?,
+    ) {
+        updateLine(lineId) { it.copy(pantryId = pantryId) }
+    }
+
     fun onLineRemoved(lineId: String) {
         _uiState.update { state -> state.copy(lines = state.lines.filterNot { it.id == lineId }) }
     }
@@ -129,6 +150,7 @@ class ScanViewModel(
                         unit = line.unit,
                         expirationDate = line.expirationDate?.toEpochMillis(),
                         opened = line.opened,
+                        pantryId = line.pantryId,
                     )
                 }
             }

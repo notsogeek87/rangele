@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.rangele.inventory.barcode.OffLookupResult
 import com.rangele.inventory.barcode.OffProduct
 import com.rangele.inventory.barcode.OpenFoodFactsClient
+import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.InventoryRepository
+import com.rangele.inventory.data.repository.PantryRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -46,6 +48,8 @@ data class BarcodeUiState(
     val unit: QuantityUnit = QuantityUnit.PIECE,
     val category: String? = null,
     val availableCategories: List<String> = emptyList(),
+    val pantryId: Long? = null,
+    val availablePantries: List<PantryEntity> = emptyList(),
     val isSaved: Boolean = false,
 ) {
     val enteredQuantity: Double? get() = quantityText.replace(',', '.').toDoubleOrNull()
@@ -55,17 +59,28 @@ data class BarcodeUiState(
 class BarcodeScanViewModel(
     private val inventoryRepository: InventoryRepository,
     private val categoryRepository: CategoryRepository,
+    private val pantryRepository: PantryRepository,
     private val openFoodFactsClient: OpenFoodFactsClient,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BarcodeUiState())
     val uiState: StateFlow<BarcodeUiState> = _uiState.asStateFlow()
 
     private var pendingBarcode: String? = null
+    private var pantryManuallySelected = false
 
     init {
         viewModelScope.launch {
             categoryRepository.observeCategories().collect { categories ->
                 _uiState.update { it.copy(availableCategories = categories.map { category -> category.name }) }
+            }
+        }
+        viewModelScope.launch {
+            pantryRepository.observePantries().collect { pantries ->
+                _uiState.update { state ->
+                    val pantryId =
+                        if (pantryManuallySelected) state.pantryId else pantries.firstOrNull { it.isDefault }?.id
+                    state.copy(availablePantries = pantries, pantryId = pantryId)
+                }
             }
         }
     }
@@ -116,6 +131,11 @@ class BarcodeScanViewModel(
         _uiState.update { it.copy(category = category) }
     }
 
+    fun onPantryChanged(pantryId: Long?) {
+        pantryManuallySelected = true
+        _uiState.update { it.copy(pantryId = pantryId) }
+    }
+
     /** Confirms adding the found (or manually-filled, when not found) product to the inventory. */
     fun onSaveClicked() {
         val state = _uiState.value
@@ -129,6 +149,7 @@ class BarcodeScanViewModel(
                 unit = state.unit,
                 category = state.category,
                 barcode = barcode,
+                pantryId = state.pantryId,
             )
             _uiState.update { it.copy(isSaved = true) }
         }
@@ -153,8 +174,14 @@ class BarcodeScanViewModel(
 
     fun onRetryScan() {
         pendingBarcode = null
+        pantryManuallySelected = false
         _uiState.update {
-            BarcodeUiState(lookup = BarcodeLookupState.Scanning, availableCategories = it.availableCategories)
+            BarcodeUiState(
+                lookup = BarcodeLookupState.Scanning,
+                availableCategories = it.availableCategories,
+                availablePantries = it.availablePantries,
+                pantryId = it.availablePantries.firstOrNull { pantry -> pantry.isDefault }?.id,
+            )
         }
     }
 }

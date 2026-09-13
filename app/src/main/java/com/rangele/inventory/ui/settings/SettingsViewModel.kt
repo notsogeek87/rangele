@@ -5,6 +5,8 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rangele.inventory.backup.BackupRepository
+import com.rangele.inventory.data.local.entity.PantryEntity
+import com.rangele.inventory.data.repository.PantryRepository
 import com.rangele.inventory.data.settings.SettingsRepository
 import com.rangele.inventory.work.ExpirationCheckScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -21,6 +23,7 @@ data class SettingsUiState(
     val delayDays: Int = 3,
     val hour: Int = 9,
     val minute: Int = 0,
+    val pantries: List<PantryEntity> = emptyList(),
     val lastBackupAt: Long? = null,
     val backupInProgress: Boolean = false,
     val backupMessage: String? = null,
@@ -33,6 +36,7 @@ private data class BackupOpState(
 
 class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
+    private val pantryRepository: PantryRepository,
     private val scheduler: ExpirationCheckScheduler,
     private val backupRepository: BackupRepository,
 ) : ViewModel() {
@@ -41,14 +45,16 @@ class SettingsViewModel(
     val uiState: StateFlow<SettingsUiState> =
         combine(
             settingsRepository.settings,
+            pantryRepository.observePantries(),
             settingsRepository.lastBackupTimestamp,
             backupState,
-        ) { settings, lastBackupAt, backupOp ->
+        ) { settings, pantries, lastBackupAt, backupOp ->
             SettingsUiState(
                 notificationsEnabled = settings.enabled,
                 delayDays = settings.delayDays,
                 hour = settings.hour,
                 minute = settings.minute,
+                pantries = pantries,
                 lastBackupAt = lastBackupAt,
                 backupInProgress = backupOp.inProgress,
                 backupMessage = backupOp.message,
@@ -79,6 +85,27 @@ class SettingsViewModel(
             settingsRepository.setNotificationTime(hour, minute)
             scheduler.apply(settingsRepository.settings.first())
         }
+    }
+
+    fun onCreatePantry(name: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch { pantryRepository.createPantry(name) }
+    }
+
+    fun onRenamePantry(
+        pantry: PantryEntity,
+        newName: String,
+    ) {
+        if (newName.isBlank()) return
+        viewModelScope.launch { pantryRepository.renamePantry(pantry, newName) }
+    }
+
+    fun onDeletePantry(pantry: PantryEntity) {
+        viewModelScope.launch { pantryRepository.deletePantry(pantry) }
+    }
+
+    fun onSetDefaultPantry(pantryId: Long?) {
+        viewModelScope.launch { pantryRepository.setDefaultPantry(pantryId) }
     }
 
     /** [uri] comes from the ACTION_CREATE_DOCUMENT picker, so it may point at Google Drive, Files, etc. */

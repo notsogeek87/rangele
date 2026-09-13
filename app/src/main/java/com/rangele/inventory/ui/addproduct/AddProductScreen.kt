@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import com.rangele.inventory.ui.components.CategoryDropdown
 import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.OpenedCheckbox
+import com.rangele.inventory.ui.components.PantryDropdown
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
 
@@ -102,6 +103,13 @@ fun AddProductScreen(
                 categories = uiState.availableCategories,
                 selectedCategory = uiState.category,
                 onCategorySelected = viewModel::onCategoryChanged,
+                modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+            )
+
+            PantryDropdown(
+                pantries = uiState.availablePantries,
+                selectedPantryId = uiState.pantryId,
+                onPantrySelected = viewModel::onPantryChanged,
                 modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
             )
 

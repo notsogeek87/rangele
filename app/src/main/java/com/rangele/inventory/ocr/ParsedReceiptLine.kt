@@ -23,4 +23,6 @@ data class ParsedReceiptLine(
     val expirationDate: LocalDate? = null,
     /** Optional, set by the user during review — OCR never infers this. */
     val opened: Boolean = false,
+    /** Optional, preselected from the default pantry during review — OCR never infers this. */
+    val pantryId: Long? = null,
 )

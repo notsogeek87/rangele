@@ -65,6 +65,7 @@ class FakeInventoryRepository(
         lowStockThreshold: Double?,
         opened: Boolean,
         barcode: String?,
+        pantryId: Long?,
     ): Long {
         val id = nextId++
         products.value = products.value +
@@ -78,6 +79,7 @@ class FakeInventoryRepository(
                 lowStockThreshold = lowStockThreshold,
                 opened = opened,
                 barcode = barcode,
+                pantryId = pantryId,
             )
         return id
     }

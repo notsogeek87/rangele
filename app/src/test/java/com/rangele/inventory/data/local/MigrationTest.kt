@@ -47,7 +47,7 @@ class MigrationTest {
             val database =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, databaseName)
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                     .allowMainThreadQueries()
                     .build()
 
@@ -64,8 +64,10 @@ class MigrationTest {
                 assertNull(product.lowStockThreshold)
                 assertFalse(product.opened)
                 assertNull(product.barcode)
+                assertNull(product.pantryId)
 
                 assertTrue(database.historyEntryDao().getAllOnce().isEmpty())
+                assertTrue(database.pantryDao().getAllOnce().isEmpty())
             } finally {
                 database.close()
             }

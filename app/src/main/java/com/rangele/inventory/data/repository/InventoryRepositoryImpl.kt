@@ -44,6 +44,7 @@ class InventoryRepositoryImpl(
         lowStockThreshold: Double?,
         opened: Boolean,
         barcode: String?,
+        pantryId: Long?,
     ): Long =
         productDao.insert(
             ProductEntity(
@@ -55,6 +56,7 @@ class InventoryRepositoryImpl(
                 lowStockThreshold = lowStockThreshold,
                 opened = opened,
                 barcode = barcode,
+                pantryId = pantryId,
             ),
         )
 

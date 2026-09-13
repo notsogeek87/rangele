@@ -10,12 +10,15 @@ import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.local.MIGRATION_1_2
 import com.rangele.inventory.data.local.MIGRATION_2_3
 import com.rangele.inventory.data.local.MIGRATION_3_4
+import com.rangele.inventory.data.local.MIGRATION_4_5
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.CategoryRepositoryImpl
 import com.rangele.inventory.data.repository.HistoryRepository
 import com.rangele.inventory.data.repository.HistoryRepositoryImpl
 import com.rangele.inventory.data.repository.InventoryRepository
 import com.rangele.inventory.data.repository.InventoryRepositoryImpl
+import com.rangele.inventory.data.repository.PantryRepository
+import com.rangele.inventory.data.repository.PantryRepositoryImpl
 import com.rangele.inventory.data.settings.SettingsRepository
 import com.rangele.inventory.data.settings.SettingsRepositoryImpl
 import com.rangele.inventory.data.settings.settingsDataStore
@@ -48,7 +51,7 @@ class AppContainer(
                 appContext,
                 AppDatabase::class.java,
                 AppDatabase.DATABASE_NAME,
-            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
+            ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
             .build()
 
     val inventoryRepository: InventoryRepository =
@@ -56,6 +59,9 @@ class AppContainer(
 
     val categoryRepository: CategoryRepository =
         CategoryRepositoryImpl(database.categoryDao(), database.productDao())
+
+    val pantryRepository: PantryRepository =
+        PantryRepositoryImpl(database.pantryDao(), database.productDao())
 
     val historyRepository: HistoryRepository = HistoryRepositoryImpl(database.historyEntryDao())
 
