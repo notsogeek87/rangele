@@ -173,7 +173,11 @@ fun RangeleNavHost(
                     factory =
                         viewModelFactory {
                             initializer {
-                                SettingsViewModel(container.settingsRepository, container.expirationCheckScheduler)
+                                SettingsViewModel(
+                                    container.settingsRepository,
+                                    container.expirationCheckScheduler,
+                                    container.backupRepository,
+                                )
                             }
                         },
                 )
