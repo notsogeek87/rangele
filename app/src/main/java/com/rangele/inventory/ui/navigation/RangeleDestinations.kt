@@ -1,6 +1,7 @@
 package com.rangele.inventory.ui.navigation
 
 object RangeleDestinations {
+    const val SPLASH = "splash"
     const val INVENTORY = "inventory"
     const val ADD_PRODUCT = "add_product"
 
