@@ -7,6 +7,7 @@ import com.rangele.inventory.data.model.QuantityUnit
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -55,6 +56,19 @@ class InventoryRepositoryImplTest {
             repository.setQuantity(id, 8.0)
 
             assertTrue(database.historyEntryDao().getAllOnce().isEmpty())
+        }
+
+    @Test
+    fun `setting the quantity to zero deletes the product`() =
+        runTest {
+            val id = repository.insertAsNew("Riz", 2.0, QuantityUnit.PIECE)
+
+            repository.setQuantity(id, 0.0)
+
+            assertNull(repository.getById(id))
+            val entries = database.historyEntryDao().getAllOnce()
+            assertEquals(1, entries.size)
+            assertEquals(2.0, entries.first().quantityRemoved, 0.0)
         }
 
     @Test

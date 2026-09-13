@@ -41,7 +41,7 @@ class BarcodeScanViewModelTest {
         }
 
     @Test
-    fun `incrementing an already present product updates its quantity`() =
+    fun `incrementing an already present product updates its quantity and returns to the list`() =
         runTest(mainDispatcherRule.dispatcher) {
             val existing = productWithBarcode("111")
             val repository = FakeInventoryRepository(listOf(existing))
@@ -56,9 +56,28 @@ class BarcodeScanViewModelTest {
 
             viewModel.onAdjustExistingQuantity(1.0)
 
-            val lookup = viewModel.uiState.value.lookup as BarcodeLookupState.AlreadyInInventory
-            assertEquals(3.0, lookup.existing.quantity, 0.0)
+            assertTrue(viewModel.uiState.value.isSaved)
             assertEquals(3.0, repository.getAllOnce().first().quantity, 0.0)
+        }
+
+    @Test
+    fun `removing the last unit of an already present product deletes it`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val existing = productWithBarcode("111").copy(quantity = 1.0)
+            val repository = FakeInventoryRepository(listOf(existing))
+            val viewModel =
+                BarcodeScanViewModel(
+                    repository,
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    FakeOpenFoodFactsClient(),
+                )
+            viewModel.onBarcodeDetected("111")
+
+            viewModel.onAdjustExistingQuantity(-1.0)
+
+            assertTrue(viewModel.uiState.value.isSaved)
+            assertTrue(repository.getAllOnce().isEmpty())
         }
 
     @Test

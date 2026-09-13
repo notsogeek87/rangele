@@ -30,9 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -93,7 +90,6 @@ fun BarcodeResultScreen(
                     AlreadyInInventoryContent(
                         existing = lookup.existing,
                         onAdjust = viewModel::onAdjustExistingQuantity,
-                        onDone = onDone,
                     )
 
                 is BarcodeLookupState.Found ->
@@ -137,18 +133,11 @@ private fun CenteredMessage(content: @Composable () -> Unit) {
     }
 }
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun AlreadyInInventoryContent(
     existing: ProductEntity,
     onAdjust: (Double) -> Unit,
-    onDone: () -> Unit,
 ) {
-    var addText by remember(existing.id) { mutableStateOf("") }
-    var removeText by remember(existing.id) { mutableStateOf("") }
-    val addAmount = addText.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
-    val removeAmount = removeText.replace(',', '.').toDoubleOrNull()?.takeIf { it > 0 }
-
     Column(modifier = Modifier.fillMaxWidth().verticalScroll(rememberScrollState())) {
         Text(
             "Produit déjà présent",
@@ -162,54 +151,20 @@ private fun AlreadyInInventoryContent(
             modifier = Modifier.padding(top = 4.dp, bottom = 24.dp),
         )
 
-        OutlinedTextField(
-            value = addText,
-            onValueChange = { addText = it },
-            label = { Text("Combien en ajouter ?") },
-            suffix = { Text(existing.quantityUnit.label) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth(),
-        )
         Button(
-            onClick = {
-                addAmount?.let {
-                    onAdjust(it)
-                    addText = ""
-                }
-            },
-            enabled = addAmount != null,
+            onClick = { onAdjust(existing.quantityUnit.step) },
             shape = ShapeSmall,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 20.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         ) {
             Text("Ajouter")
         }
 
-        OutlinedTextField(
-            value = removeText,
-            onValueChange = { removeText = it },
-            label = { Text("Combien retirer ?") },
-            suffix = { Text(existing.quantityUnit.label) },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-            modifier = Modifier.fillMaxWidth(),
-        )
         Button(
-            onClick = {
-                removeAmount?.let {
-                    onAdjust(-it)
-                    removeText = ""
-                }
-            },
-            enabled = removeAmount != null,
+            onClick = { onAdjust(-existing.quantityUnit.step) },
             shape = ShapeSmall,
-            modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
         ) {
             Text("Retirer")
-        }
-
-        TextButton(onClick = onDone, modifier = Modifier.fillMaxWidth().padding(top = 24.dp, bottom = 16.dp)) {
-            Text("Terminé")
         }
     }
 }
