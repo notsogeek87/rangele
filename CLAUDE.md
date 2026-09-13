@@ -28,14 +28,17 @@ Fonctionnalités V3 (au-dessus du MVP) :
 - **Liste de courses suggérée** : écran listant les produits sous leur `lowStockThreshold`
   (seuil optionnel par produit, comparé brut à la quantité — pas de conversion d'unité) ; les
   produits cochés peuvent être partagés en texte simple via l'intent de partage Android.
-- **Placards** : champ optionnel sur le produit, gérés (créer/renommer/supprimer) directement
-  dans l'écran Paramètres, où l'on choisit aussi le placard par défaut (présélectionné à chaque
-  ajout de produit — manuel, scan de code-barres ou revue de ticket). Supprimer un placard
-  détache simplement les produits qui l'utilisaient.
+- **Placards** : champ optionnel sur le produit, gérés (créer/renommer/supprimer, choix du
+  placard par défaut) dans un écran dédié accessible depuis le menu « ⋮ » de l'inventaire ; le
+  placard par défaut est présélectionné à chaque ajout de produit (manuel, scan de code-barres
+  ou revue de ticket). Si l'utilisateur n'a encore aucun placard, l'inventaire lui propose d'en
+  créer un à l'ouverture de l'app. Supprimer un placard détache simplement les produits qui
+  l'utilisaient.
 
 Le MVP et la V3 sont implémentés (`app/src/main/java/com/rangele/inventory`) : Room, repository,
-écrans Compose (inventaire, ajout, scan/vérification de ticket, catégories, historique, liste de
-courses, paramètres), WorkManager (`work/`), DataStore (`data/settings/`) et thème Kawaii Pastel Pop.
+écrans Compose (inventaire, ajout, scan/vérification de ticket, catégories, placards, historique,
+liste de courses, paramètres), WorkManager (`work/`), DataStore (`data/settings/`) et thème Kawaii
+Pastel Pop.
 
 ## Commands
 

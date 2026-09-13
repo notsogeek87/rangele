@@ -4,6 +4,7 @@ import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.testutil.FakeCategoryRepository
 import com.rangele.inventory.testutil.FakeInventoryRepository
+import com.rangele.inventory.testutil.FakePantryRepository
 import com.rangele.inventory.testutil.MainDispatcherRule
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.runTest
@@ -44,7 +45,7 @@ class InventoryViewModelTest {
                 FakeInventoryRepository(
                     listOf(product(1, "Yaourt"), product(2, "Ananas"), product(3, "Beurre")),
                 )
-            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             assertEquals(
@@ -61,7 +62,7 @@ class InventoryViewModelTest {
                 FakeInventoryRepository(
                     listOf(product(1, "Lait demi-ecreme"), product(2, "Lait entier"), product(3, "Farine")),
                 )
-            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onSearchQueryChanged("lait")
@@ -77,7 +78,7 @@ class InventoryViewModelTest {
     fun `increment adds the unit step to the quantity`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 2.0)))
-            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onIncrement(
@@ -98,7 +99,7 @@ class InventoryViewModelTest {
     fun `decrement never pushes the quantity below zero`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 0.0)))
-            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onDecrement(
@@ -126,7 +127,7 @@ class InventoryViewModelTest {
                         product(3, "Farine", category = "Placard"),
                     ),
                 )
-            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onCategoryFilterChanged("Placard")
@@ -149,7 +150,7 @@ class InventoryViewModelTest {
                         product(3, "Perime plus tard", expirationDate = 3_000L),
                     ),
                 )
-            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onSortModeChanged(SortMode.EXPIRATION)
@@ -165,7 +166,7 @@ class InventoryViewModelTest {
     fun `delete removes the product from the list`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes")))
-            val viewModel = InventoryViewModel(repository, FakeCategoryRepository())
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
             viewModel.onDelete(
