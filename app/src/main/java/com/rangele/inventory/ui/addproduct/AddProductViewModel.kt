@@ -129,20 +129,12 @@ class AddProductViewModel(
         }
     }
 
-    fun onCreateSeparateProduct() {
+    fun onRemoveFromExisting() {
         val state = _uiState.value
+        val match = state.mergeSuggestion ?: return
         val quantity = state.enteredQuantity ?: return
         viewModelScope.launch {
-            repository.insertAsNew(
-                name = state.name.trim(),
-                quantity = quantity,
-                unit = state.unit,
-                expirationDate = state.expirationDate?.toEpochMillis(),
-                category = state.category,
-                lowStockThreshold = state.enteredLowStockThreshold,
-                opened = state.opened,
-                pantryId = state.pantryId,
-            )
+            repository.adjustQuantity(match.id, -quantity)
             _uiState.update { it.copy(isSaved = true, mergeSuggestion = null) }
         }
     }
