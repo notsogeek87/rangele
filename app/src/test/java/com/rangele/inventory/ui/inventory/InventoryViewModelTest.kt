@@ -9,6 +9,7 @@ import com.rangele.inventory.testutil.MainDispatcherRule
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -141,6 +142,34 @@ class InventoryViewModelTest {
             assertEquals(5_000L, saved.expirationDate)
             assertTrue(saved.opened)
             assertEquals(2.0, saved.lowStockThreshold ?: -1.0, 0.0)
+        }
+
+    @Test
+    fun `toggling the shopping list button flags the product then clears it`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository = FakeInventoryRepository(listOf(product(1, "Cafe", quantity = 10.0)))
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
+            viewModel.collectInBackground(backgroundScope)
+
+            viewModel.onToggleShoppingList(
+                viewModel.uiState.value.products
+                    .single(),
+            )
+            assertTrue(
+                viewModel.uiState.value.products
+                    .single()
+                    .inShoppingList,
+            )
+
+            viewModel.onToggleShoppingList(
+                viewModel.uiState.value.products
+                    .single(),
+            )
+            assertFalse(
+                viewModel.uiState.value.products
+                    .single()
+                    .inShoppingList,
+            )
         }
 
     @Test

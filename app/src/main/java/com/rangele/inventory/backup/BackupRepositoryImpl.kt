@@ -85,6 +85,7 @@ private fun ProductEntity.toJson(): JSONObject =
         put("category", category ?: JSONObject.NULL)
         put("lowStockThreshold", lowStockThreshold ?: JSONObject.NULL)
         put("opened", opened)
+        put("inShoppingList", inShoppingList)
         put("barcode", barcode ?: JSONObject.NULL)
     }
 
@@ -99,6 +100,8 @@ private fun JSONObject.toProductEntity(): ProductEntity =
         category = if (isNull("category")) null else getString("category"),
         lowStockThreshold = if (isNull("lowStockThreshold")) null else getDouble("lowStockThreshold"),
         opened = getBoolean("opened"),
+        // optBoolean : une sauvegarde antérieure à ce champ se restaure sans ajout manuel.
+        inShoppingList = optBoolean("inShoppingList", false),
         barcode = if (isNull("barcode")) null else getString("barcode"),
     )
 

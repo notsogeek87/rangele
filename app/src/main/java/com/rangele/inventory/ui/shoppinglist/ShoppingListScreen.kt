@@ -126,9 +126,14 @@ private fun ShoppingListRow(
             Checkbox(checked = checked, onCheckedChange = { onToggle() })
             Column(modifier = Modifier.weight(1f)) {
                 Text(product.name, style = MaterialTheme.typography.bodyLarge)
+                val reason =
+                    if (product.inShoppingList) {
+                        "ajouté manuellement"
+                    } else {
+                        "seuil : ${formatQuantity(product.lowStockThreshold ?: 0.0)}"
+                    }
                 Text(
-                    "Stock actuel : ${formatQuantity(product.quantity)} ${product.quantityUnit.label} " +
-                        "(seuil : ${formatQuantity(product.lowStockThreshold ?: 0.0)})",
+                    "Stock actuel : ${formatQuantity(product.quantity)} ${product.quantityUnit.label} ($reason)",
                     style = MaterialTheme.typography.labelSmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
