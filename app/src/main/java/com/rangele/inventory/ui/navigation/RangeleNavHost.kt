@@ -33,13 +33,24 @@ import com.rangele.inventory.ui.settings.SettingsScreen
 import com.rangele.inventory.ui.settings.SettingsViewModel
 import com.rangele.inventory.ui.shoppinglist.ShoppingListScreen
 import com.rangele.inventory.ui.shoppinglist.ShoppingListViewModel
+import com.rangele.inventory.ui.splash.SplashScreen
 
 @Composable
 fun RangeleNavHost(
     container: AppContainer,
     navController: NavHostController = rememberNavController(),
 ) {
-    NavHost(navController = navController, startDestination = RangeleDestinations.INVENTORY) {
+    NavHost(navController = navController, startDestination = RangeleDestinations.SPLASH) {
+        composable(RangeleDestinations.SPLASH) {
+            SplashScreen(
+                onTimeout = {
+                    navController.navigate(RangeleDestinations.INVENTORY) {
+                        popUpTo(RangeleDestinations.SPLASH) { inclusive = true }
+                    }
+                },
+            )
+        }
+
         composable(RangeleDestinations.INVENTORY) { entry ->
             val viewModel: InventoryViewModel =
                 viewModel(
