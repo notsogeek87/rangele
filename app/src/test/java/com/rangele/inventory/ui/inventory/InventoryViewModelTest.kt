@@ -107,7 +107,10 @@ class InventoryViewModelTest {
                     .first(),
             )
 
-            assertTrue(viewModel.uiState.value.products.isEmpty())
+            assertTrue(
+                viewModel.uiState.value.products
+                    .isEmpty(),
+            )
         }
 
     @Test
