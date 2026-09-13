@@ -28,7 +28,10 @@ fun PantryDropdown(
     label: String = "Placard",
 ) {
     var expanded by remember { mutableStateOf(false) }
-    val selectedName = pantries.firstOrNull { it.id == selectedPantryId }?.name ?: NO_PANTRY_LABEL
+    val selectedName =
+        pantries
+            .firstOrNull { it.id == selectedPantryId }
+            ?.name ?: NO_PANTRY_LABEL
     ExposedDropdownMenuBox(
         expanded = expanded,
         onExpandedChange = { expanded = it },

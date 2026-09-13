@@ -53,9 +53,12 @@ class AddProductViewModel(
         }
         viewModelScope.launch {
             pantryRepository.observePantries().collect { pantries ->
+                val defaultPantryId =
+                    pantries
+                        .firstOrNull { it.isDefault }
+                        ?.id
                 _uiState.update { state ->
-                    val pantryId =
-                        if (pantryManuallySelected) state.pantryId else pantries.firstOrNull { it.isDefault }?.id
+                    val pantryId = if (pantryManuallySelected) state.pantryId else defaultPantryId
                     state.copy(availablePantries = pantries, pantryId = pantryId)
                 }
             }
