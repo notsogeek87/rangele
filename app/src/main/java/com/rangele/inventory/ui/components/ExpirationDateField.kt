@@ -2,6 +2,8 @@ package com.rangele.inventory.ui.components
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
@@ -10,7 +12,9 @@ import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberDatePickerState
@@ -39,26 +43,43 @@ fun ExpirationDateField(
 ) {
     var showPicker by remember { mutableStateOf(false) }
 
-    OutlinedTextField(
-        value = date?.format(DISPLAY_FORMAT) ?: "",
-        onValueChange = {},
-        readOnly = true,
-        label = { Text(label) },
-        trailingIcon = {
-            if (date != null) {
-                IconButton(onClick = { onDateChanged(null) }) {
-                    Icon(Icons.Default.Close, contentDescription = "Effacer la date")
-                }
-            } else {
-                Icon(Icons.Default.CalendarMonth, contentDescription = null)
-            }
-        },
+    // enabled = false so the field's own focus/cursor handling can't swallow the tap meant for
+    // the outer clickable (a readOnly field alone is unreliable here); colors restore its normal
+    // look since "disabled" would otherwise render it greyed out.
+    Box(
         modifier =
             modifier.clickable(
                 interactionSource = remember { MutableInteractionSource() },
                 indication = null,
             ) { showPicker = true },
-    )
+    ) {
+        OutlinedTextField(
+            value = date?.format(DISPLAY_FORMAT) ?: "",
+            onValueChange = {},
+            enabled = false,
+            readOnly = true,
+            label = { Text(label) },
+            trailingIcon = {
+                if (date != null) {
+                    IconButton(onClick = { onDateChanged(null) }) {
+                        Icon(Icons.Default.Close, contentDescription = "Effacer la date")
+                    }
+                } else {
+                    Icon(Icons.Default.CalendarMonth, contentDescription = null)
+                }
+            },
+            colors =
+                OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface,
+                    disabledBorderColor = MaterialTheme.colorScheme.outline,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledLeadingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledTrailingIconColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                ),
+            modifier = Modifier.fillMaxWidth(),
+        )
+    }
 
     if (showPicker) {
         val state =

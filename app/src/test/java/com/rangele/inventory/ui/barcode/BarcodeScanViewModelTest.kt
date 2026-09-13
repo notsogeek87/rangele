@@ -226,7 +226,7 @@ class BarcodeScanViewModelTest {
 
             val saved = repository.getAllOnce().single()
             val expected = LocalDate.of(2030, 1, 1).toEpochMillis()
-            assertEquals(listOf(expected, expected), repository.getItemExpirationDates(saved.id))
+            assertEquals(listOf(expected, expected), repository.getItems(saved.id).map { it.expirationDate })
         }
 
     @Test
@@ -247,7 +247,7 @@ class BarcodeScanViewModelTest {
             viewModel.onExpirationDateChanged(newDate)
             viewModel.onAdjustExistingQuantity(1.0)
 
-            val dates = repository.getItemExpirationDates(existing.id)
+            val dates = repository.getItems(existing.id).map { it.expirationDate }
             assertEquals(3, dates.size)
             assertEquals(1, dates.count { it == newDate.toEpochMillis() })
             assertEquals(2, dates.count { it == null })

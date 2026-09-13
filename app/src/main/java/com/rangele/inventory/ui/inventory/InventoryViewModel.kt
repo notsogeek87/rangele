@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.InventoryRepository
+import com.rangele.inventory.data.repository.ItemDetails
 import com.rangele.inventory.data.repository.PantryRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -54,10 +55,10 @@ class InventoryViewModel(
     /** True once pantries have loaded and none exist yet, until the user creates one or dismisses the prompt. */
     val showCreatePantryPrompt: StateFlow<Boolean> = _showCreatePantryPrompt.asStateFlow()
 
-    private val _editingItems = MutableStateFlow<List<Long?>?>(null)
+    private val _editingItems = MutableStateFlow<List<ItemDetails>?>(null)
 
-    /** Per-item expiration dates of the product currently open in the edit dialog, null while loading. */
-    val editingItems: StateFlow<List<Long?>?> = _editingItems.asStateFlow()
+    /** Items of the product currently open in the edit dialog, null while loading. */
+    val editingItems: StateFlow<List<ItemDetails>?> = _editingItems.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -134,9 +135,9 @@ class InventoryViewModel(
         viewModelScope.launch { repository.updateDetails(product.id, expirationDate, opened) }
     }
 
-    /** Loads the per-item expiration dates of [productId] for the edit dialog to show. */
+    /** Loads the items of [productId] for the edit dialog to show. */
     fun onEditDialogOpened(productId: Long) {
-        viewModelScope.launch { _editingItems.value = repository.getItemExpirationDates(productId) }
+        viewModelScope.launch { _editingItems.value = repository.getItems(productId) }
     }
 
     fun onEditDialogClosed() {
@@ -145,10 +146,9 @@ class InventoryViewModel(
 
     fun onItemsSaved(
         product: ProductEntity,
-        expirationDates: List<Long?>,
-        opened: Boolean,
+        items: List<ItemDetails>,
     ) {
-        viewModelScope.launch { repository.saveItems(product.id, expirationDates, opened) }
+        viewModelScope.launch { repository.saveItems(product.id, items) }
     }
 
     fun onDelete(product: ProductEntity) {

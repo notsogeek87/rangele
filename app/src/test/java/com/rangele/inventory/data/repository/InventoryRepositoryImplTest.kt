@@ -103,8 +103,17 @@ class InventoryRepositoryImplTest {
         runTest {
             val id = repository.insertAsNew("Yaourt", 3.0, QuantityUnit.PIECE, expirationDate = 1_000L)
 
-            assertEquals(listOf(1_000L, 1_000L, 1_000L), repository.getItemExpirationDates(id))
+            assertEquals(listOf(1_000L, 1_000L, 1_000L), dates(id))
             assertEquals(1_000L, repository.getById(id)?.expirationDate)
+        }
+
+    @Test
+    fun `inserting a discrete-unit product already opened marks every item opened`() =
+        runTest {
+            val id = repository.insertAsNew("Yaourt", 2.0, QuantityUnit.PIECE, opened = true)
+
+            assertTrue(repository.getItems(id).all { it.opened })
+            assertTrue(repository.getById(id)?.opened == true)
         }
 
     @Test
@@ -112,20 +121,28 @@ class InventoryRepositoryImplTest {
         runTest {
             val id = repository.insertAsNew("Farine", 1.5, QuantityUnit.KILOGRAM, expirationDate = 1_000L)
 
-            assertTrue(repository.getItemExpirationDates(id).isEmpty())
+            assertTrue(repository.getItems(id).isEmpty())
         }
 
     @Test
-    fun `saveItems replaces the item dates and derives the product's quantity and cached date`() =
+    fun `saveItems replaces the items and derives the product's quantity, cached date and opened status`() =
         runTest {
             val id = repository.insertAsNew("Yaourt", 2.0, QuantityUnit.PIECE)
 
-            repository.saveItems(id, listOf(3_000L, null, 1_000L), opened = true)
+            repository.saveItems(
+                id,
+                listOf(
+                    ItemDetails(expirationDate = 3_000L, opened = false),
+                    ItemDetails(expirationDate = null, opened = true),
+                    ItemDetails(expirationDate = 1_000L, opened = false),
+                ),
+            )
 
-            assertEquals(listOf(3_000L, null, 1_000L), repository.getItemExpirationDates(id))
+            assertEquals(listOf(3_000L, null, 1_000L), dates(id))
             val updated = repository.getById(id)
             assertEquals(3.0, updated?.quantity ?: 0.0, 0.0)
             assertEquals(1_000L, updated?.expirationDate)
+            // One item is opened, so the product-level cache reflects it even though the others aren't.
             assertTrue(updated?.opened == true)
         }
 
@@ -134,7 +151,7 @@ class InventoryRepositoryImplTest {
         runTest {
             val id = repository.insertAsNew("Yaourt", 1.0, QuantityUnit.PIECE)
 
-            repository.saveItems(id, emptyList(), opened = false)
+            repository.saveItems(id, emptyList())
 
             assertNull(repository.getById(id))
         }
@@ -143,12 +160,30 @@ class InventoryRepositoryImplTest {
     fun `decreasing quantity removes the soonest-expiring items first`() =
         runTest {
             val id = repository.insertAsNew("Yaourt", 2.0, QuantityUnit.PIECE)
-            repository.saveItems(id, listOf(3_000L, 1_000L), opened = false)
+            repository.saveItems(
+                id,
+                listOf(ItemDetails(3_000L, opened = false), ItemDetails(1_000L, opened = false)),
+            )
 
             repository.setQuantity(id, 1.0)
 
-            assertEquals(listOf(3_000L), repository.getItemExpirationDates(id))
+            assertEquals(listOf(3_000L), dates(id))
             assertEquals(3_000L, repository.getById(id)?.expirationDate)
+        }
+
+    @Test
+    fun `decreasing quantity past the only opened item clears the product's opened cache`() =
+        runTest {
+            val id = repository.insertAsNew("Yaourt", 2.0, QuantityUnit.PIECE)
+            repository.saveItems(
+                id,
+                listOf(ItemDetails(1_000L, opened = true), ItemDetails(3_000L, opened = false)),
+            )
+
+            // FEFO removes the soonest-expiring item first: here the opened one (1_000L).
+            repository.setQuantity(id, 1.0)
+
+            assertTrue(repository.getById(id)?.opened == false)
         }
 
     @Test
@@ -158,7 +193,9 @@ class InventoryRepositoryImplTest {
 
             repository.incrementExisting(id, 1.0, expirationDate = 2_000L)
 
-            assertEquals(listOf(1_000L, 2_000L), repository.getItemExpirationDates(id).sortedBy { it })
+            assertEquals(listOf(1_000L, 2_000L), dates(id).sortedBy { it })
             assertEquals(1_000L, repository.getById(id)?.expirationDate)
         }
+
+    private suspend fun dates(productId: Long): List<Long?> = repository.getItems(productId).map { it.expirationDate }
 }
