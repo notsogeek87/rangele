@@ -37,13 +37,18 @@ interface InventoryRepository {
         pantryId: Long? = null,
     ): Long
 
-    /** Adds [quantity] to an already-existing product's stock. */
+    /**
+     * Adds [addedQuantity] to an already-existing product's stock. For a discrete-unit product
+     * (see [QuantityUnit.step]) that already tracks per-item dates, the newly added units get
+     * [expirationDate]; existing items are untouched.
+     */
     suspend fun incrementExisting(
         productId: Long,
         addedQuantity: Double,
+        expirationDate: Long? = null,
     )
 
-    /** Updates an existing product's expiration date and opened status. */
+    /** Updates an existing product's expiration date and opened status. Continuous units only. */
     suspend fun updateDetails(
         productId: Long,
         expirationDate: Long?,
@@ -61,4 +66,20 @@ interface InventoryRepository {
     )
 
     suspend fun deleteProduct(productId: Long)
+
+    /**
+     * The individual expiration date of each unit in stock for a discrete-unit product (one entry
+     * per unit, `null` where untracked). Empty for a continuous-unit product.
+     */
+    suspend fun getItemExpirationDates(productId: Long): List<Long?>
+
+    /**
+     * Replaces a discrete-unit product's items with [expirationDates] (one entry per unit): its
+     * quantity becomes `expirationDates.size`, and [opened] is updated alongside.
+     */
+    suspend fun saveItems(
+        productId: Long,
+        expirationDates: List<Long?>,
+        opened: Boolean,
+    )
 }

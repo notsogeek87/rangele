@@ -10,11 +10,13 @@ import com.rangele.inventory.testutil.FakeInventoryRepository
 import com.rangele.inventory.testutil.FakeOpenFoodFactsClient
 import com.rangele.inventory.testutil.FakePantryRepository
 import com.rangele.inventory.testutil.MainDispatcherRule
+import com.rangele.inventory.util.toEpochMillis
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
+import java.time.LocalDate
 
 class BarcodeScanViewModelTest {
     @get:Rule
@@ -207,6 +209,48 @@ class BarcodeScanViewModelTest {
 
             viewModel.onSaveClicked()
             assertEquals(0, repository.getAllOnce().size)
+        }
+
+    @Test
+    fun `saving a new product with an expiration date tags every unit with it`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val offProduct = OffProduct(barcode = "666", name = "Yaourt")
+            val client = FakeOpenFoodFactsClient(mapOf("666" to OffLookupResult.Found(offProduct)))
+            val repository = FakeInventoryRepository()
+            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), FakePantryRepository(), client)
+            viewModel.onBarcodeDetected("666")
+
+            viewModel.onQuantityTextChanged("2")
+            viewModel.onExpirationDateChanged(LocalDate.of(2030, 1, 1))
+            viewModel.onSaveClicked()
+
+            val saved = repository.getAllOnce().single()
+            val expected = LocalDate.of(2030, 1, 1).toEpochMillis()
+            assertEquals(listOf(expected, expected), repository.getItemExpirationDates(saved.id))
+        }
+
+    @Test
+    fun `adding to an already present product tags only the new unit with the entered date`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val existing = productWithBarcode("111")
+            val repository = FakeInventoryRepository(listOf(existing))
+            val viewModel =
+                BarcodeScanViewModel(
+                    repository,
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    FakeOpenFoodFactsClient(),
+                )
+            viewModel.onBarcodeDetected("111")
+
+            val newDate = LocalDate.of(2030, 6, 15)
+            viewModel.onExpirationDateChanged(newDate)
+            viewModel.onAdjustExistingQuantity(1.0)
+
+            val dates = repository.getItemExpirationDates(existing.id)
+            assertEquals(3, dates.size)
+            assertEquals(1, dates.count { it == newDate.toEpochMillis() })
+            assertEquals(2, dates.count { it == null })
         }
 
     private fun productWithBarcode(barcode: String): ProductEntity =

@@ -27,7 +27,8 @@ class InventoryRepositoryImplTest {
                 .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
                 .allowMainThreadQueries()
                 .build()
-        repository = InventoryRepositoryImpl(database.productDao(), database.historyEntryDao())
+        repository =
+            InventoryRepositoryImpl(database.productDao(), database.historyEntryDao(), database.productItemDao())
     }
 
     @After
@@ -95,5 +96,69 @@ class InventoryRepositoryImplTest {
             assertEquals(123456789L, updated?.expirationDate)
             assertTrue(updated?.opened == true)
             assertEquals(1.0, updated?.quantity ?: 0.0, 0.0)
+        }
+
+    @Test
+    fun `inserting a discrete-unit product with a date creates one item per unit`() =
+        runTest {
+            val id = repository.insertAsNew("Yaourt", 3.0, QuantityUnit.PIECE, expirationDate = 1_000L)
+
+            assertEquals(listOf(1_000L, 1_000L, 1_000L), repository.getItemExpirationDates(id))
+            assertEquals(1_000L, repository.getById(id)?.expirationDate)
+        }
+
+    @Test
+    fun `inserting a continuous-unit product never creates items`() =
+        runTest {
+            val id = repository.insertAsNew("Farine", 1.5, QuantityUnit.KILOGRAM, expirationDate = 1_000L)
+
+            assertTrue(repository.getItemExpirationDates(id).isEmpty())
+        }
+
+    @Test
+    fun `saveItems replaces the item dates and derives the product's quantity and cached date`() =
+        runTest {
+            val id = repository.insertAsNew("Yaourt", 2.0, QuantityUnit.PIECE)
+
+            repository.saveItems(id, listOf(3_000L, null, 1_000L), opened = true)
+
+            assertEquals(listOf(3_000L, null, 1_000L), repository.getItemExpirationDates(id))
+            val updated = repository.getById(id)
+            assertEquals(3.0, updated?.quantity ?: 0.0, 0.0)
+            assertEquals(1_000L, updated?.expirationDate)
+            assertTrue(updated?.opened == true)
+        }
+
+    @Test
+    fun `saveItems with an empty list deletes the product like setting the quantity to zero`() =
+        runTest {
+            val id = repository.insertAsNew("Yaourt", 1.0, QuantityUnit.PIECE)
+
+            repository.saveItems(id, emptyList(), opened = false)
+
+            assertNull(repository.getById(id))
+        }
+
+    @Test
+    fun `decreasing quantity removes the soonest-expiring items first`() =
+        runTest {
+            val id = repository.insertAsNew("Yaourt", 2.0, QuantityUnit.PIECE)
+            repository.saveItems(id, listOf(3_000L, 1_000L), opened = false)
+
+            repository.setQuantity(id, 1.0)
+
+            assertEquals(listOf(3_000L), repository.getItemExpirationDates(id))
+            assertEquals(3_000L, repository.getById(id)?.expirationDate)
+        }
+
+    @Test
+    fun `incrementing an existing discrete-unit product tags only the new units with the given date`() =
+        runTest {
+            val id = repository.insertAsNew("Yaourt", 1.0, QuantityUnit.PIECE, expirationDate = 1_000L)
+
+            repository.incrementExisting(id, 1.0, expirationDate = 2_000L)
+
+            assertEquals(listOf(1_000L, 2_000L), repository.getItemExpirationDates(id).sortedBy { it })
+            assertEquals(1_000L, repository.getById(id)?.expirationDate)
         }
 }

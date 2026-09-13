@@ -2,16 +2,20 @@ package com.rangele.inventory.data.repository
 
 import com.rangele.inventory.data.local.dao.HistoryEntryDao
 import com.rangele.inventory.data.local.dao.ProductDao
+import com.rangele.inventory.data.local.dao.ProductItemDao
 import com.rangele.inventory.data.local.entity.HistoryEntryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
+import com.rangele.inventory.data.local.entity.ProductItemEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.util.ProductNameMatcher
 import kotlinx.coroutines.flow.Flow
 import kotlin.math.max
+import kotlin.math.roundToInt
 
 class InventoryRepositoryImpl(
     private val productDao: ProductDao,
     private val historyEntryDao: HistoryEntryDao,
+    private val productItemDao: ProductItemDao,
 ) : InventoryRepository {
     override fun observeProducts(
         query: String,
@@ -45,29 +49,47 @@ class InventoryRepositoryImpl(
         opened: Boolean,
         barcode: String?,
         pantryId: Long?,
-    ): Long =
-        productDao.insert(
-            ProductEntity(
-                name = name.trim(),
-                quantity = quantity,
-                unit = unit.name,
-                expirationDate = expirationDate,
-                category = category,
-                lowStockThreshold = lowStockThreshold,
-                opened = opened,
-                barcode = barcode,
-                pantryId = pantryId,
-            ),
-        )
+    ): Long {
+        val id =
+            productDao.insert(
+                ProductEntity(
+                    name = name.trim(),
+                    quantity = quantity,
+                    unit = unit.name,
+                    expirationDate = expirationDate,
+                    category = category,
+                    lowStockThreshold = lowStockThreshold,
+                    opened = opened,
+                    barcode = barcode,
+                    pantryId = pantryId,
+                ),
+            )
+        if (unit.tracksItems) {
+            val itemCount = quantity.roundToInt().coerceAtLeast(0)
+            productItemDao.insertAll(
+                List(itemCount) { ProductItemEntity(productId = id, expirationDate = expirationDate) },
+            )
+        }
+        return id
+    }
 
     override suspend fun incrementExisting(
         productId: Long,
         addedQuantity: Double,
+        expirationDate: Long?,
     ) {
         val existing = productDao.getById(productId) ?: return
+        val newQuantity = existing.quantity + addedQuantity
+        val cachedExpirationDate =
+            if (existing.quantityUnit.tracksItems) {
+                syncItemsToQuantity(productId, newQuantity, newItemExpirationDate = expirationDate)
+            } else {
+                existing.expirationDate
+            }
         productDao.update(
             existing.copy(
-                quantity = existing.quantity + addedQuantity,
+                quantity = newQuantity,
+                expirationDate = cachedExpirationDate,
                 updatedAt = System.currentTimeMillis(),
             ),
         )
@@ -83,15 +105,23 @@ class InventoryRepositoryImpl(
             logWithdrawal(existing.name, existing.quantity - newQuantity, existing.unit)
         }
         if (newQuantity == 0.0) {
+            productItemDao.deleteForProduct(productId)
             productDao.deleteById(productId)
-        } else {
-            productDao.update(
-                existing.copy(
-                    quantity = newQuantity,
-                    updatedAt = System.currentTimeMillis(),
-                ),
-            )
+            return
         }
+        val cachedExpirationDate =
+            if (existing.quantityUnit.tracksItems) {
+                syncItemsToQuantity(productId, newQuantity)
+            } else {
+                existing.expirationDate
+            }
+        productDao.update(
+            existing.copy(
+                quantity = newQuantity,
+                expirationDate = cachedExpirationDate,
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
     }
 
     override suspend fun adjustQuantity(
@@ -120,7 +150,37 @@ class InventoryRepositoryImpl(
     override suspend fun deleteProduct(productId: Long) {
         val existing = productDao.getById(productId) ?: return
         logWithdrawal(existing.name, existing.quantity, existing.unit)
+        productItemDao.deleteForProduct(productId)
         productDao.deleteById(productId)
+    }
+
+    override suspend fun getItemExpirationDates(productId: Long): List<Long?> =
+        productItemDao.getForProduct(productId).map { it.expirationDate }
+
+    override suspend fun saveItems(
+        productId: Long,
+        expirationDates: List<Long?>,
+        opened: Boolean,
+    ) {
+        val existing = productDao.getById(productId) ?: return
+        val newQuantity = expirationDates.size.toDouble()
+        if (newQuantity < existing.quantity) {
+            logWithdrawal(existing.name, existing.quantity - newQuantity, existing.unit)
+        }
+        if (newQuantity == 0.0) {
+            productItemDao.deleteForProduct(productId)
+            productDao.deleteById(productId)
+            return
+        }
+        productItemDao.replaceForProduct(productId, expirationDates)
+        productDao.update(
+            existing.copy(
+                quantity = newQuantity,
+                expirationDate = expirationDates.filterNotNull().minOrNull(),
+                opened = opened,
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
     }
 
     private suspend fun logWithdrawal(
@@ -136,4 +196,36 @@ class InventoryRepositoryImpl(
             ),
         )
     }
+
+    /**
+     * Adds or removes item rows so their count matches [targetQuantity], then returns the new
+     * soonest-expiration cache (see [ProductEntity.expirationDate]) for the caller to persist.
+     * Added units get [newItemExpirationDate]; removed units are the soonest-expiring first
+     * (undated ones last), so a quick "-" tap consumes the item closest to spoiling.
+     */
+    private suspend fun syncItemsToQuantity(
+        productId: Long,
+        targetQuantity: Double,
+        newItemExpirationDate: Long? = null,
+    ): Long? {
+        val currentItems = productItemDao.getForProduct(productId)
+        val targetCount = targetQuantity.roundToInt().coerceAtLeast(0)
+        when {
+            targetCount > currentItems.size ->
+                productItemDao.insertAll(
+                    List(targetCount - currentItems.size) {
+                        ProductItemEntity(productId = productId, expirationDate = newItemExpirationDate)
+                    },
+                )
+            targetCount < currentItems.size -> {
+                val removalOrder =
+                    currentItems.sortedWith(compareBy({ it.expirationDate == null }, { it.expirationDate }))
+                productItemDao.delete(removalOrder.take(currentItems.size - targetCount))
+            }
+        }
+        return productItemDao.getForProduct(productId).mapNotNull { it.expirationDate }.minOrNull()
+    }
 }
+
+/** Whether a product in this unit is tracked as individual units with their own expiration date. */
+private val QuantityUnit.tracksItems: Boolean get() = step == 1.0
