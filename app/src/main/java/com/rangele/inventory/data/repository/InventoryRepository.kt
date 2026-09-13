@@ -55,6 +55,12 @@ interface InventoryRepository {
         opened: Boolean,
     )
 
+    /** Updates an existing product's low-stock threshold, editable from its product sheet regardless of unit kind. */
+    suspend fun updateLowStockThreshold(
+        productId: Long,
+        lowStockThreshold: Double?,
+    )
+
     suspend fun setQuantity(
         productId: Long,
         quantity: Double,

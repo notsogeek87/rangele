@@ -62,6 +62,7 @@ import com.rangele.inventory.R
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.repository.ItemDetails
 import com.rangele.inventory.ui.components.ExpirationDateField
+import com.rangele.inventory.ui.components.LowStockThresholdField
 import com.rangele.inventory.ui.components.OpenedCheckbox
 import com.rangele.inventory.ui.theme.WarningOrange
 import com.rangele.inventory.util.ExpirationStatus
@@ -69,6 +70,7 @@ import com.rangele.inventory.util.toEpochMillis
 import com.rangele.inventory.util.toLocalDate
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import kotlin.math.roundToInt
 
 private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
 
@@ -299,8 +301,9 @@ fun InventoryScreen(
                         viewModel.onEditDialogClosed()
                         productPendingEdit = null
                     },
-                    onConfirm = { items ->
+                    onConfirm = { items, lowStockThreshold ->
                         viewModel.onItemsSaved(product, items)
+                        viewModel.onLowStockThresholdUpdated(product, lowStockThreshold)
                         viewModel.onEditDialogClosed()
                         productPendingEdit = null
                     },
@@ -310,9 +313,10 @@ fun InventoryScreen(
             EditQuantityDialog(
                 product = product,
                 onDismiss = { productPendingEdit = null },
-                onConfirm = { newQuantity, expirationDate, opened ->
+                onConfirm = { newQuantity, expirationDate, opened, lowStockThreshold ->
                     viewModel.onQuantitySet(product, newQuantity)
                     viewModel.onDetailsUpdated(product, expirationDate, opened)
+                    viewModel.onLowStockThresholdUpdated(product, lowStockThreshold)
                     productPendingEdit = null
                 },
             )
@@ -461,11 +465,12 @@ private fun expirationColor(status: ExpirationStatus): Color =
 private fun EditQuantityDialog(
     product: ProductEntity,
     onDismiss: () -> Unit,
-    onConfirm: (quantity: Double, expirationDate: Long?, opened: Boolean) -> Unit,
+    onConfirm: (quantity: Double, expirationDate: Long?, opened: Boolean, lowStockThreshold: Double?) -> Unit,
 ) {
     var text by remember(product.id) { mutableStateOf(formatPlainQuantity(product.quantity)) }
     var expirationDate by remember(product.id) { mutableStateOf(product.expirationDate?.toLocalDate()) }
     var opened by remember(product.id) { mutableStateOf(product.opened) }
+    var thresholdText by remember(product.id) { mutableStateOf(formatThreshold(product.lowStockThreshold)) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Modifier ${product.name}") },
@@ -487,12 +492,17 @@ private fun EditQuantityDialog(
                     onOpenedChanged = { opened = it },
                     modifier = Modifier.padding(top = 4.dp),
                 )
+                LowStockThresholdField(
+                    text = thresholdText,
+                    onTextChanged = { thresholdText = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 text.replace(',', '.').toDoubleOrNull()?.let { quantity ->
-                    onConfirm(quantity, expirationDate?.toEpochMillis(), opened)
+                    onConfirm(quantity, expirationDate?.toEpochMillis(), opened, thresholdText.toDoubleOrNull())
                 }
             }) { Text("Enregistrer") }
         },
@@ -511,8 +521,8 @@ private data class ItemDraft(
 /**
  * Edits a discrete-unit product (pièce/paquet): one row per unit in stock, each with its own
  * optional expiration date and opened status, instead of a single date/status shared by the whole
- * quantity. Adding or removing a row changes the quantity; the product must be deleted from the
- * list to reach zero.
+ * quantity. Adding or removing a row changes the quantity, down to zero — the product stays in the
+ * inventory at zero stock rather than being deleted.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -520,13 +530,13 @@ private fun EditItemsDialog(
     product: ProductEntity,
     items: List<ItemDetails>,
     onDismiss: () -> Unit,
-    onConfirm: (items: List<ItemDetails>) -> Unit,
+    onConfirm: (items: List<ItemDetails>, lowStockThreshold: Double?) -> Unit,
 ) {
     var drafts by
         remember(product.id) {
-            val initial = items.ifEmpty { listOf(ItemDetails(expirationDate = null, opened = false)) }
-            mutableStateOf(initial.map { ItemDraft(it.expirationDate?.toLocalDate(), it.opened) })
+            mutableStateOf(items.map { ItemDraft(it.expirationDate?.toLocalDate(), it.opened) })
         }
+    var thresholdText by remember(product.id) { mutableStateOf(formatThreshold(product.lowStockThreshold)) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Modifier ${product.name}") },
@@ -550,7 +560,6 @@ private fun EditItemsDialog(
                             )
                             IconButton(
                                 onClick = { drafts = drafts.toMutableList().also { it.removeAt(index) } },
-                                enabled = drafts.size > 1,
                             ) {
                                 Icon(Icons.Default.Close, contentDescription = "Retirer cet article")
                             }
@@ -569,11 +578,17 @@ private fun EditItemsDialog(
                 ) {
                     Text("+ Ajouter un article")
                 }
+                LowStockThresholdField(
+                    text = thresholdText,
+                    onTextChanged = { thresholdText = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
             }
         },
         confirmButton = {
             TextButton(onClick = {
-                onConfirm(drafts.map { ItemDetails(it.date?.toEpochMillis(), it.opened) })
+                val items = drafts.map { ItemDetails(it.date?.toEpochMillis(), it.opened) }
+                onConfirm(items, thresholdText.toDoubleOrNull())
             }) { Text("Enregistrer") }
         },
         dismissButton = {
@@ -584,6 +599,8 @@ private fun EditItemsDialog(
 
 private fun formatPlainQuantity(quantity: Double): String =
     if (quantity == quantity.toLong().toDouble()) quantity.toLong().toString() else quantity.toString()
+
+private fun formatThreshold(threshold: Double?): String = threshold?.roundToInt()?.toString() ?: ""
 
 private fun formatQuantity(
     quantity: Double,

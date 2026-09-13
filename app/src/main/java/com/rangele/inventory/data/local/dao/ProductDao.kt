@@ -37,7 +37,7 @@ interface ProductDao {
 
     @Query(
         "SELECT * FROM products " +
-            "WHERE low_stock_threshold IS NOT NULL AND quantity < low_stock_threshold " +
+            "WHERE low_stock_threshold IS NOT NULL AND quantity <= low_stock_threshold " +
             "ORDER BY name COLLATE NOCASE ASC",
     )
     fun observeLowStock(): Flow<List<ProductEntity>>
