@@ -16,6 +16,7 @@ object RangeleDestinations {
     const val BARCODE_RESULT = "barcode/result"
 
     const val CATEGORIES = "categories"
+    const val PANTRIES = "pantries"
     const val HISTORY = "history"
     const val SHOPPING_LIST = "shopping_list"
     const val SETTINGS = "settings"

@@ -5,10 +5,12 @@ import androidx.lifecycle.viewModelScope
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.InventoryRepository
+import com.rangele.inventory.data.repository.PantryRepository
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
@@ -40,10 +42,27 @@ private data class Filters(
 class InventoryViewModel(
     private val repository: InventoryRepository,
     private val categoryRepository: CategoryRepository,
+    private val pantryRepository: PantryRepository,
 ) : ViewModel() {
     private val searchQuery = MutableStateFlow("")
     private val sortMode = MutableStateFlow(SortMode.NAME)
     private val selectedCategory = MutableStateFlow<String?>(null)
+
+    private var pantryPromptDismissed = false
+    private val _showCreatePantryPrompt = MutableStateFlow(false)
+
+    /** True once pantries have loaded and none exist yet, until the user creates one or dismisses the prompt. */
+    val showCreatePantryPrompt: StateFlow<Boolean> = _showCreatePantryPrompt.asStateFlow()
+
+    init {
+        viewModelScope.launch {
+            pantryRepository.observePantries().collect { pantries ->
+                if (!pantryPromptDismissed) {
+                    _showCreatePantryPrompt.value = pantries.isEmpty()
+                }
+            }
+        }
+    }
 
     val uiState: StateFlow<InventoryUiState> =
         combine(
@@ -112,5 +131,21 @@ class InventoryViewModel(
 
     fun onDelete(product: ProductEntity) {
         viewModelScope.launch { repository.deleteProduct(product.id) }
+    }
+
+    /** Creates the user's first pantry and makes it the default, since it's the only one so far. */
+    fun onCreateFirstPantry(name: String) {
+        if (name.isBlank()) return
+        viewModelScope.launch {
+            val id = pantryRepository.createPantry(name)
+            pantryRepository.setDefaultPantry(id)
+            pantryPromptDismissed = true
+            _showCreatePantryPrompt.value = false
+        }
+    }
+
+    fun onDismissCreatePantryPrompt() {
+        pantryPromptDismissed = true
+        _showCreatePantryPrompt.value = false
     }
 }

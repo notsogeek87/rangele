@@ -23,6 +23,8 @@ import com.rangele.inventory.ui.history.HistoryScreen
 import com.rangele.inventory.ui.history.HistoryViewModel
 import com.rangele.inventory.ui.inventory.InventoryScreen
 import com.rangele.inventory.ui.inventory.InventoryViewModel
+import com.rangele.inventory.ui.pantries.PantriesScreen
+import com.rangele.inventory.ui.pantries.PantriesViewModel
 import com.rangele.inventory.ui.scan.ReceiptImportScreen
 import com.rangele.inventory.ui.scan.ReceiptReviewScreen
 import com.rangele.inventory.ui.scan.ScanCaptureScreen
@@ -45,7 +47,11 @@ fun RangeleNavHost(
                     factory =
                         viewModelFactory {
                             initializer {
-                                InventoryViewModel(container.inventoryRepository, container.categoryRepository)
+                                InventoryViewModel(
+                                    container.inventoryRepository,
+                                    container.categoryRepository,
+                                    container.pantryRepository,
+                                )
                             }
                         },
                 )
@@ -56,6 +62,7 @@ fun RangeleNavHost(
                 onScanReceiptClick = { navController.navigate(RangeleDestinations.SCAN_GRAPH) },
                 onImportReceiptClick = { navController.navigate(RangeleDestinations.SCAN_IMPORT) },
                 onCategoriesClick = { navController.navigate(RangeleDestinations.CATEGORIES) },
+                onPantriesClick = { navController.navigate(RangeleDestinations.PANTRIES) },
                 onHistoryClick = { navController.navigate(RangeleDestinations.HISTORY) },
                 onShoppingListClick = { navController.navigate(RangeleDestinations.SHOPPING_LIST) },
                 onSettingsClick = { navController.navigate(RangeleDestinations.SETTINGS) },
@@ -152,6 +159,15 @@ fun RangeleNavHost(
             CategoriesScreen(viewModel = viewModel, onBackClick = { navController.popBackStack() })
         }
 
+        composable(RangeleDestinations.PANTRIES) { entry ->
+            val viewModel: PantriesViewModel =
+                viewModel(
+                    entry,
+                    factory = viewModelFactory { initializer { PantriesViewModel(container.pantryRepository) } },
+                )
+            PantriesScreen(viewModel = viewModel, onBackClick = { navController.popBackStack() })
+        }
+
         composable(RangeleDestinations.HISTORY) { entry ->
             val viewModel: HistoryViewModel =
                 viewModel(
@@ -179,7 +195,6 @@ fun RangeleNavHost(
                             initializer {
                                 SettingsViewModel(
                                     container.settingsRepository,
-                                    container.pantryRepository,
                                     container.expirationCheckScheduler,
                                     container.backupRepository,
                                 )

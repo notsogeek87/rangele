@@ -74,11 +74,13 @@ fun InventoryScreen(
     onScanReceiptClick: () -> Unit,
     onImportReceiptClick: () -> Unit,
     onCategoriesClick: () -> Unit,
+    onPantriesClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onShoppingListClick: () -> Unit,
     onSettingsClick: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val showCreatePantryPrompt by viewModel.showCreatePantryPrompt.collectAsState()
     var productPendingEdit by remember { mutableStateOf<ProductEntity?>(null) }
     var productPendingDelete by remember { mutableStateOf<ProductEntity?>(null) }
     var menuExpanded by remember { mutableStateOf(false) }
@@ -128,6 +130,13 @@ fun InventoryScreen(
                             onClick = {
                                 menuExpanded = false
                                 onCategoriesClick()
+                            },
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Placards") },
+                            onClick = {
+                                menuExpanded = false
+                                onPantriesClick()
                             },
                         )
                         DropdownMenuItem(
@@ -299,6 +308,48 @@ fun InventoryScreen(
             },
         )
     }
+
+    if (showCreatePantryPrompt) {
+        CreateFirstPantryDialog(
+            onDismiss = viewModel::onDismissCreatePantryPrompt,
+            onConfirm = viewModel::onCreateFirstPantry,
+        )
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CreateFirstPantryDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit,
+) {
+    var text by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Créer votre premier placard") },
+        text = {
+            Column {
+                Text(
+                    "Un placard permet de ranger vos produits (ex. Cuisine, Congélateur). " +
+                        "Vous pourrez en créer d'autres plus tard depuis le menu « Placards ».",
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+                OutlinedTextField(
+                    value = text,
+                    onValueChange = { text = it },
+                    singleLine = true,
+                    label = { Text("Nom du placard") },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onConfirm(text) }, enabled = text.isNotBlank()) { Text("Créer") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Plus tard") }
+        },
+    )
 }
 
 @Composable
