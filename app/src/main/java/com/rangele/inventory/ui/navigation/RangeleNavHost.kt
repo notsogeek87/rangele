@@ -52,6 +52,7 @@ fun RangeleNavHost(
             InventoryScreen(
                 viewModel = viewModel,
                 onAddProductClick = { navController.navigate(RangeleDestinations.ADD_PRODUCT) },
+                onScanBarcodeClick = { navController.navigate(RangeleDestinations.BARCODE_GRAPH) },
                 onScanReceiptClick = { navController.navigate(RangeleDestinations.SCAN_GRAPH) },
                 onImportReceiptClick = { navController.navigate(RangeleDestinations.SCAN_IMPORT) },
                 onCategoriesClick = { navController.navigate(RangeleDestinations.CATEGORIES) },
@@ -76,7 +77,6 @@ fun RangeleNavHost(
                 viewModel = viewModel,
                 onBackClick = { navController.popBackStack() },
                 onSaved = { navController.popBackStack() },
-                onScanBarcodeClick = { navController.navigate(RangeleDestinations.BARCODE_GRAPH) },
             )
         }
 
