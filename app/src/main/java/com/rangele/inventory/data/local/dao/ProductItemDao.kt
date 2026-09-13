@@ -25,14 +25,14 @@ interface ProductItemDao {
     @Query("DELETE FROM product_items WHERE product_id = :productId")
     suspend fun deleteForProduct(productId: Long)
 
-    /** Replaces every item of [productId] with one row per entry of [expirationDates], in order. */
+    /** Replaces every item of [productId] with [items] (each already carrying that [productId]). */
     @Transaction
     suspend fun replaceForProduct(
         productId: Long,
-        expirationDates: List<Long?>,
+        items: List<ProductItemEntity>,
     ) {
         deleteForProduct(productId)
-        insertAll(expirationDates.map { ProductItemEntity(productId = productId, expirationDate = it) })
+        insertAll(items)
     }
 
     /** Used when restoring a backup: replaces the whole table with the imported rows (see BackupRepository). */

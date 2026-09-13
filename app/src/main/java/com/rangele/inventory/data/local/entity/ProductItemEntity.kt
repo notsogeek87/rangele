@@ -22,4 +22,12 @@ data class ProductItemEntity(
     val productId: Long,
     @ColumnInfo(name = "expiration_date")
     val expirationDate: Long? = null,
+    /**
+     * Whether this specific unit has already been opened/started.
+     *
+     * The SQL default is declared so a migrated column matches the table Room creates on a fresh
+     * install (see [ProductEntity.opened], which predates per-item tracking, for the same pattern).
+     */
+    @ColumnInfo(defaultValue = "0")
+    val opened: Boolean = false,
 )

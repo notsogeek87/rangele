@@ -60,12 +60,14 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.R
 import com.rangele.inventory.data.local.entity.ProductEntity
+import com.rangele.inventory.data.repository.ItemDetails
 import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.OpenedCheckbox
 import com.rangele.inventory.ui.theme.WarningOrange
 import com.rangele.inventory.util.ExpirationStatus
 import com.rangele.inventory.util.toEpochMillis
 import com.rangele.inventory.util.toLocalDate
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 private val DATE_FORMAT: DateTimeFormatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
@@ -297,8 +299,8 @@ fun InventoryScreen(
                         viewModel.onEditDialogClosed()
                         productPendingEdit = null
                     },
-                    onConfirm = { expirationDates, opened ->
-                        viewModel.onItemsSaved(product, expirationDates, opened)
+                    onConfirm = { items ->
+                        viewModel.onItemsSaved(product, items)
                         viewModel.onEditDialogClosed()
                         productPendingEdit = null
                     },
@@ -500,64 +502,79 @@ private fun EditQuantityDialog(
     )
 }
 
+/** Local editable form of [ItemDetails], with [LocalDate] instead of epoch millis for [ExpirationDateField]. */
+private data class ItemDraft(
+    val date: LocalDate?,
+    val opened: Boolean,
+)
+
 /**
  * Edits a discrete-unit product (pièce/paquet): one row per unit in stock, each with its own
- * optional expiration date, instead of a single date shared by the whole quantity. Adding or
- * removing a row changes the quantity; the product must be deleted from the list to reach zero.
+ * optional expiration date and opened status, instead of a single date/status shared by the whole
+ * quantity. Adding or removing a row changes the quantity; the product must be deleted from the
+ * list to reach zero.
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun EditItemsDialog(
     product: ProductEntity,
-    items: List<Long?>,
+    items: List<ItemDetails>,
     onDismiss: () -> Unit,
-    onConfirm: (expirationDates: List<Long?>, opened: Boolean) -> Unit,
+    onConfirm: (items: List<ItemDetails>) -> Unit,
 ) {
-    var itemDates by remember(product.id) { mutableStateOf(items.ifEmpty { listOf(null) }.map { it?.toLocalDate() }) }
-    var opened by remember(product.id) { mutableStateOf(product.opened) }
+    var drafts by
+        remember(product.id) {
+            val initial = items.ifEmpty { listOf(ItemDetails(expirationDate = null, opened = false)) }
+            mutableStateOf(initial.map { ItemDraft(it.expirationDate?.toLocalDate(), it.opened) })
+        }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("Modifier ${product.name}") },
         text = {
             Column(modifier = Modifier.heightIn(max = 420.dp).verticalScroll(rememberScrollState())) {
                 Text(
-                    "${itemDates.size} ${product.quantityUnit.label}",
+                    "${drafts.size} ${product.quantityUnit.label}",
                     style = MaterialTheme.typography.labelMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
-                itemDates.forEachIndexed { index, date ->
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        modifier = Modifier.padding(top = 8.dp),
-                    ) {
-                        ExpirationDateField(
-                            date = date,
-                            onDateChanged = { newDate ->
-                                itemDates = itemDates.toMutableList().also { it[index] = newDate }
-                            },
-                            modifier = Modifier.weight(1f),
-                            label = "Article ${index + 1}",
-                        )
-                        IconButton(
-                            onClick = { itemDates = itemDates.toMutableList().also { it.removeAt(index) } },
-                            enabled = itemDates.size > 1,
-                        ) {
-                            Icon(Icons.Default.Close, contentDescription = "Retirer cet article")
+                drafts.forEachIndexed { index, draft ->
+                    Column(modifier = Modifier.padding(top = 8.dp)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            ExpirationDateField(
+                                date = draft.date,
+                                onDateChanged = { newDate ->
+                                    drafts = drafts.toMutableList().also { it[index] = draft.copy(date = newDate) }
+                                },
+                                modifier = Modifier.weight(1f),
+                                label = "Article ${index + 1}",
+                            )
+                            IconButton(
+                                onClick = { drafts = drafts.toMutableList().also { it.removeAt(index) } },
+                                enabled = drafts.size > 1,
+                            ) {
+                                Icon(Icons.Default.Close, contentDescription = "Retirer cet article")
+                            }
                         }
+                        OpenedCheckbox(
+                            opened = draft.opened,
+                            onOpenedChanged = { newOpened ->
+                                drafts = drafts.toMutableList().also { it[index] = draft.copy(opened = newOpened) }
+                            },
+                        )
                     }
                 }
-                TextButton(onClick = { itemDates = itemDates + null }, modifier = Modifier.padding(top = 4.dp)) {
+                TextButton(
+                    onClick = { drafts = drafts + ItemDraft(date = null, opened = false) },
+                    modifier = Modifier.padding(top = 4.dp),
+                ) {
                     Text("+ Ajouter un article")
                 }
-                OpenedCheckbox(
-                    opened = opened,
-                    onOpenedChanged = { opened = it },
-                    modifier = Modifier.padding(top = 4.dp),
-                )
             }
         },
         confirmButton = {
-            TextButton(onClick = { onConfirm(itemDates.map { it?.toEpochMillis() }, opened) }) { Text("Enregistrer") }
+            TextButton(onClick = {
+                onConfirm(drafts.map { ItemDetails(it.date?.toEpochMillis(), it.opened) })
+            }) { Text("Enregistrer") }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) { Text("Annuler") }
