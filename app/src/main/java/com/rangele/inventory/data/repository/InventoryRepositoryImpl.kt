@@ -105,11 +105,6 @@ class InventoryRepositoryImpl(
         if (newQuantity < existing.quantity) {
             logWithdrawal(existing.name, existing.quantity - newQuantity, existing.unit)
         }
-        if (newQuantity == 0.0) {
-            productItemDao.deleteForProduct(productId)
-            productDao.deleteById(productId)
-            return
-        }
         val summary =
             if (existing.quantityUnit.tracksItems) {
                 syncItemsToQuantity(productId, newQuantity)
@@ -149,6 +144,19 @@ class InventoryRepositoryImpl(
         )
     }
 
+    override suspend fun updateLowStockThreshold(
+        productId: Long,
+        lowStockThreshold: Double?,
+    ) {
+        val existing = productDao.getById(productId) ?: return
+        productDao.update(
+            existing.copy(
+                lowStockThreshold = lowStockThreshold,
+                updatedAt = System.currentTimeMillis(),
+            ),
+        )
+    }
+
     override suspend fun deleteProduct(productId: Long) {
         val existing = productDao.getById(productId) ?: return
         logWithdrawal(existing.name, existing.quantity, existing.unit)
@@ -167,11 +175,6 @@ class InventoryRepositoryImpl(
         val newQuantity = items.size.toDouble()
         if (newQuantity < existing.quantity) {
             logWithdrawal(existing.name, existing.quantity - newQuantity, existing.unit)
-        }
-        if (newQuantity == 0.0) {
-            productItemDao.deleteForProduct(productId)
-            productDao.deleteById(productId)
-            return
         }
         productItemDao.replaceForProduct(
             productId,

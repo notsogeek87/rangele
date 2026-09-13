@@ -53,7 +53,7 @@ class FakeInventoryRepository(
             list
                 .filter { product ->
                     val threshold = product.lowStockThreshold
-                    threshold != null && product.quantity < threshold
+                    threshold != null && product.quantity <= threshold
                 }.sortedBy { it.name.lowercase() }
         }
 
@@ -123,11 +123,6 @@ class FakeInventoryRepository(
     ) {
         val existing = getById(productId) ?: return
         val newQuantity = max(0.0, quantity)
-        if (newQuantity == 0.0) {
-            items.remove(productId)
-            products.value = products.value.filterNot { it.id == productId }
-            return
-        }
         val summary =
             if (existing.quantityUnit.tracksItems) {
                 syncItemsToQuantity(productId, newQuantity)
@@ -155,6 +150,13 @@ class FakeInventoryRepository(
         replace(productId) { it.copy(expirationDate = expirationDate, opened = opened) }
     }
 
+    override suspend fun updateLowStockThreshold(
+        productId: Long,
+        lowStockThreshold: Double?,
+    ) {
+        replace(productId) { it.copy(lowStockThreshold = lowStockThreshold) }
+    }
+
     override suspend fun deleteProduct(productId: Long) {
         items.remove(productId)
         products.value = products.value.filterNot { it.id == productId }
@@ -168,11 +170,6 @@ class FakeInventoryRepository(
     ) {
         getById(productId) ?: return
         val newQuantity = items.size.toDouble()
-        if (newQuantity == 0.0) {
-            this.items.remove(productId)
-            products.value = products.value.filterNot { it.id == productId }
-            return
-        }
         this.items[productId] = items.toMutableList()
         replace(productId) {
             it.copy(

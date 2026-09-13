@@ -4,10 +4,10 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.model.QuantityUnit
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Test
@@ -60,13 +60,13 @@ class InventoryRepositoryImplTest {
         }
 
     @Test
-    fun `setting the quantity to zero deletes the product`() =
+    fun `setting the quantity to zero keeps the product visible with a zero quantity`() =
         runTest {
             val id = repository.insertAsNew("Riz", 2.0, QuantityUnit.PIECE)
 
             repository.setQuantity(id, 0.0)
 
-            assertNull(repository.getById(id))
+            assertEquals(0.0, repository.getById(id)?.quantity ?: -1.0, 0.0)
             val entries = database.historyEntryDao().getAllOnce()
             assertEquals(1, entries.size)
             assertEquals(2.0, entries.first().quantityRemoved, 0.0)
@@ -147,13 +147,14 @@ class InventoryRepositoryImplTest {
         }
 
     @Test
-    fun `saveItems with an empty list deletes the product like setting the quantity to zero`() =
+    fun `saveItems with an empty list keeps the product visible with a zero quantity`() =
         runTest {
             val id = repository.insertAsNew("Yaourt", 1.0, QuantityUnit.PIECE)
 
             repository.saveItems(id, emptyList())
 
-            assertNull(repository.getById(id))
+            assertEquals(0.0, repository.getById(id)?.quantity ?: -1.0, 0.0)
+            assertTrue(repository.getItems(id).isEmpty())
         }
 
     @Test
@@ -195,6 +196,60 @@ class InventoryRepositoryImplTest {
 
             assertEquals(listOf(1_000L, 2_000L), dates(id).sortedBy { it })
             assertEquals(1_000L, repository.getById(id)?.expirationDate)
+        }
+
+    @Test
+    fun `low stock suggestion follows quantity less than or equal to threshold, including a zero quantity`() =
+        runTest {
+            val aboveThreshold = repository.insertAsNew("Farine", 5.0, QuantityUnit.KILOGRAM)
+            repository.updateLowStockThreshold(aboveThreshold, 2.0)
+            val atThreshold = repository.insertAsNew("Riz", 2.0, QuantityUnit.KILOGRAM)
+            repository.updateLowStockThreshold(atThreshold, 2.0)
+            val belowThreshold = repository.insertAsNew("Sucre", 1.0, QuantityUnit.KILOGRAM)
+            repository.updateLowStockThreshold(belowThreshold, 2.0)
+            val zeroBelowThreshold = repository.insertAsNew("Sel", 0.0, QuantityUnit.KILOGRAM)
+            repository.updateLowStockThreshold(zeroBelowThreshold, 2.0)
+            val zeroAtOneThreshold = repository.insertAsNew("Beurre", 0.0, QuantityUnit.KILOGRAM)
+            repository.updateLowStockThreshold(zeroAtOneThreshold, 1.0)
+            val zeroAtZeroThreshold = repository.insertAsNew("Lait", 0.0, QuantityUnit.KILOGRAM)
+            repository.updateLowStockThreshold(zeroAtZeroThreshold, 0.0)
+
+            val suggested = repository.observeLowStockProducts().first().map { it.name }
+
+            assertEquals(
+                setOf("Riz", "Sucre", "Sel", "Beurre", "Lait"),
+                suggested.toSet(),
+            )
+            assertTrue("Farine" !in suggested)
+        }
+
+    @Test
+    fun `a product dropping to zero stock stays visible in the inventory and can be suggested`() =
+        runTest {
+            // "Coquillettes: stock = 1, seuil = 1" already qualifies (1 <= 1); consuming the last
+            // pack must not make it disappear from the inventory or the suggestion.
+            val id = repository.insertAsNew("Coquillettes", 1.0, QuantityUnit.PIECE)
+            repository.updateLowStockThreshold(id, 1.0)
+            assertTrue(repository.observeLowStockProducts().first().any { it.id == id })
+
+            repository.adjustQuantity(id, -1.0)
+
+            assertEquals(0.0, repository.getById(id)?.quantity ?: -1.0, 0.0)
+            assertTrue(repository.getAllOnce().any { it.id == id })
+            assertTrue(repository.observeLowStockProducts().first().any { it.id == id })
+        }
+
+    @Test
+    fun `changing the threshold immediately updates the suggestion, and restocking above it removes it`() =
+        runTest {
+            val id = repository.insertAsNew("Cafe", 3.0, QuantityUnit.PIECE)
+            assertTrue(repository.observeLowStockProducts().first().none { it.id == id })
+
+            repository.updateLowStockThreshold(id, 3.0)
+            assertTrue(repository.observeLowStockProducts().first().any { it.id == id })
+
+            repository.setQuantity(id, 5.0)
+            assertTrue(repository.observeLowStockProducts().first().none { it.id == id })
         }
 
     private suspend fun dates(productId: Long): List<Long?> = repository.getItems(productId).map { it.expirationDate }

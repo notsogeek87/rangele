@@ -50,6 +50,35 @@ class ShoppingListViewModelTest {
         }
 
     @Test
+    fun `a product is suggested exactly when its quantity is at or below its threshold, zero included`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository =
+                FakeInventoryRepository(
+                    listOf(
+                        product(1, "StockAboveThreshold", quantity = 5.0, lowStockThreshold = 2.0),
+                        product(2, "StockAtThreshold", quantity = 2.0, lowStockThreshold = 2.0),
+                        product(3, "StockBelowThreshold", quantity = 1.0, lowStockThreshold = 2.0),
+                        product(4, "ZeroStockAboveZeroThreshold", quantity = 0.0, lowStockThreshold = 2.0),
+                        product(5, "ZeroStockAtOneThreshold", quantity = 0.0, lowStockThreshold = 1.0),
+                        product(6, "ZeroStockAtZeroThreshold", quantity = 0.0, lowStockThreshold = 0.0),
+                    ),
+                )
+            val viewModel = ShoppingListViewModel(repository)
+            viewModel.uiState.launchIn(backgroundScope)
+
+            assertEquals(
+                setOf(
+                    "StockAtThreshold",
+                    "StockBelowThreshold",
+                    "ZeroStockAboveZeroThreshold",
+                    "ZeroStockAtOneThreshold",
+                    "ZeroStockAtZeroThreshold",
+                ),
+                viewModel.uiState.value.products.map { it.name }.toSet(),
+            )
+        }
+
+    @Test
     fun `share text only includes checked products`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository =
