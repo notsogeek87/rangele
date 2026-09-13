@@ -163,6 +163,11 @@ class InventoryViewModel(
         }
     }
 
+    /** Bascule l'ajout manuel à la liste de courses, complément du seuil pour les produits encore en stock. */
+    fun onToggleShoppingList(product: ProductEntity) {
+        viewModelScope.launch { repository.setInShoppingList(product.id, !product.inShoppingList) }
+    }
+
     fun onDelete(product: ProductEntity) {
         viewModelScope.launch { repository.deleteProduct(product.id) }
     }

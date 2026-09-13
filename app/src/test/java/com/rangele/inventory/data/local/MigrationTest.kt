@@ -54,6 +54,7 @@ class MigrationTest {
                         MIGRATION_4_5,
                         MIGRATION_5_6,
                         MIGRATION_6_7,
+                        MIGRATION_7_8,
                     ).allowMainThreadQueries()
                     .build()
 
@@ -69,6 +70,7 @@ class MigrationTest {
                 assertNull(product.category)
                 assertNull(product.lowStockThreshold)
                 assertFalse(product.opened)
+                assertFalse(product.inShoppingList)
                 assertNull(product.barcode)
                 assertNull(product.pantryId)
 
@@ -100,6 +102,7 @@ class MigrationTest {
                         MIGRATION_4_5,
                         MIGRATION_5_6,
                         MIGRATION_6_7,
+                        MIGRATION_7_8,
                     ).allowMainThreadQueries()
                     .build()
 
@@ -123,7 +126,7 @@ class MigrationTest {
             val database =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, databaseName)
-                    .addMigrations(MIGRATION_6_7)
+                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
                     .allowMainThreadQueries()
                     .build()
 

@@ -35,12 +35,20 @@ interface ProductDao {
     @Query("SELECT * FROM products WHERE barcode = :barcode LIMIT 1")
     suspend fun getByBarcode(barcode: String): ProductEntity?
 
+    /** Suggestion automatique (sous le seuil) ou ajout manuel : les deux alimentent la même liste. */
     @Query(
         "SELECT * FROM products " +
-            "WHERE low_stock_threshold IS NOT NULL AND quantity <= low_stock_threshold " +
+            "WHERE in_shopping_list = 1 " +
+            "OR (low_stock_threshold IS NOT NULL AND quantity <= low_stock_threshold) " +
             "ORDER BY name COLLATE NOCASE ASC",
     )
     fun observeLowStock(): Flow<List<ProductEntity>>
+
+    @Query("UPDATE products SET in_shopping_list = :inShoppingList WHERE id = :productId")
+    suspend fun setInShoppingList(
+        productId: Long,
+        inShoppingList: Boolean,
+    )
 
     @Query("UPDATE products SET category = NULL WHERE category = :category")
     suspend fun clearCategory(category: String)
