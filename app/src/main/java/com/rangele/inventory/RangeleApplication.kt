@@ -18,9 +18,10 @@ class RangeleApplication :
     // called, instead of us calling WorkManager.initialize() eagerly (which throws if called more than once
     // per process — e.g. across Robolectric test classes, which each spin up a fresh Application). The
     // default androidx.startup init is disabled in the manifest, which this override requires.
-    override fun getWorkManagerConfiguration(): Configuration =
-        Configuration
-            .Builder()
-            .setWorkerFactory(container.expirationWorkerFactory)
-            .build()
+    override val workManagerConfiguration: Configuration
+        get() =
+            Configuration
+                .Builder()
+                .setWorkerFactory(container.expirationWorkerFactory)
+                .build()
 }
