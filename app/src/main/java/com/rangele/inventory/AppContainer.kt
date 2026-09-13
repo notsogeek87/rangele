@@ -67,8 +67,14 @@ class AppContainer(
     val expirationWorkerFactory =
         ExpirationCheckWorker.Factory(inventoryRepository, settingsRepository, expirationNotifier)
 
-    init {
-        // Re-applies persisted settings in case the periodic work was never scheduled yet.
+    /**
+     * Re-applies persisted settings in case the periodic work was never scheduled yet.
+     *
+     * Called by [RangeleApplication] once the container is assigned, not from an `init` block: this
+     * reaches WorkManager, which asks the application back for its Configuration (and therefore for
+     * this container) while initializing on demand.
+     */
+    fun scheduleExpirationChecks() {
         applicationScope.launch {
             expirationCheckScheduler.apply(settingsRepository.settings.first())
         }

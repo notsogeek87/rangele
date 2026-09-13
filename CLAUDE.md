@@ -52,7 +52,10 @@ Pour lancer un seul test unitaire :
 Il n'y a pas de tests instrumentés (androidTest) au-delà de la dépendance `ui-test-junit4` déclarée
 dans `app/build.gradle.kts` ; aucune suite androidTest n'existe encore. Les tests qui ont besoin
 d'une vraie base SQLite (migration Room, historique) tournent en JVM via Robolectric plutôt qu'en
-androidTest — voir `MigrationTest` et `InventoryRepositoryImplTest`.
+androidTest — voir `MigrationTest` et `InventoryRepositoryImplTest`. `MigrationTest` n'utilise pas
+`MigrationTestHelper` : celui-ci lit les JSON de schéma des versions passées, or seule la version
+courante est générée au build et aucun schéma n'est versionné. Il crée donc une base v1 en SQL brut
+et laisse Room appliquer les migrations, ce qui déclenche la validation du schéma final par Room.
 
 ## CI
 
@@ -79,8 +82,8 @@ Les rapports de tests/lint sont aussi publiés en artifact (pas en release).
 
 Structure de package sous `com.rangele.inventory` (voir README) :
 - `data` — entités Room, DAO, base de données, repository, et `data/settings` (Preferences
-  DataStore pour les réglages de notification). `exportSchema = true` depuis la V3 (migration 1→2,
-  voir `Migrations.kt`) ; le plugin Gradle `androidx.room` exporte le schéma dans un dossier
+  DataStore pour les réglages de notification). `exportSchema = true` depuis la V3 (migrations 1→2
+  puis 2→3, voir `Migrations.kt`) ; le plugin Gradle `androidx.room` exporte le schéma dans un dossier
   différent par flavor (`room { schemaDirectory(...) }` dans `app/build.gradle.kts`) pour éviter
   que les tâches KSP de `staging`/`production` écrivent en parallèle dans le même fichier.
 - `ocr` — reconnaissance de texte (ML Kit `text-recognition`) et heuristique de parsing des lignes

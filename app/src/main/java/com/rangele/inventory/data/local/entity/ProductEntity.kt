@@ -22,7 +22,13 @@ data class ProductEntity(
     /** Below this quantity the product is surfaced in the suggested shopping list; null disables it. */
     @ColumnInfo(name = "low_stock_threshold")
     val lowStockThreshold: Double? = null,
-    /** Whether the product has already been opened/started. */
+    /**
+     * Whether the product has already been opened/started.
+     *
+     * The SQL default is declared so a migrated column (`ALTER TABLE ... ADD COLUMN ... NOT NULL
+     * DEFAULT 0`, which SQLite requires) matches the table Room creates on a fresh install.
+     */
+    @ColumnInfo(defaultValue = "0")
     val opened: Boolean = false,
 ) {
     val quantityUnit: QuantityUnit

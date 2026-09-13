@@ -1,72 +1,93 @@
 package com.rangele.inventory.data.local
 
-import androidx.room.testing.MigrationTestHelper
-import androidx.test.platform.app.InstrumentationRegistry
+import android.content.Context
+import android.database.sqlite.SQLiteDatabase
+import androidx.room.Room
+import androidx.test.core.app.ApplicationProvider
+import kotlinx.coroutines.test.runTest
+import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
-import org.junit.Rule
+import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
 
-/** Runs the real Migration against real SQLite (via Robolectric, since there is no androidTest suite here). */
+/**
+ * Creates a real v1 SQLite database, then lets Room apply the migrations up to the current version.
+ * Room validates the resulting schema against the compiled entities while opening, so a migration
+ * that forgets a column, a table or an index fails this test.
+ *
+ * Room's own MigrationTestHelper is deliberately not used: it loads the exported schema JSON of the
+ * *older* versions, but only the current version is generated at build time and no schema is checked
+ * into the repository, so it can only ever throw FileNotFoundException here.
+ */
 @RunWith(RobolectricTestRunner::class)
 class MigrationTest {
-    @get:Rule
-    val helper: MigrationTestHelper =
-        MigrationTestHelper(
-            InstrumentationRegistry.getInstrumentation(),
-            AppDatabase::class.java,
-        )
+    private val context: Context = ApplicationProvider.getApplicationContext()
+    private val databaseName = "migration-test.db"
 
-    @Test
-    fun `migration from 1 to 2 keeps existing products and adds the new columns`() {
-        val dbName = "migration-test"
-        helper.createDatabase(dbName, 1).apply {
-            execSQL(
-                "INSERT INTO products (id, name, quantity, unit, updated_at) " +
-                    "VALUES (1, 'Riz basmati', 2.0, 'PIECE', 1000)",
-            )
-            close()
-        }
+    @Before
+    fun setUp() {
+        context.deleteDatabase(databaseName)
+    }
 
-        val migratedDb = helper.runMigrationsAndValidate(dbName, 2, true, MIGRATION_1_2)
-
-        migratedDb.query("SELECT * FROM products WHERE id = 1").use { cursor ->
-            assertTrue(cursor.moveToFirst())
-            assertEquals("Riz basmati", cursor.getString(cursor.getColumnIndexOrThrow("name")))
-            assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("expiration_date")))
-            assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("category")))
-            assertTrue(cursor.isNull(cursor.getColumnIndexOrThrow("low_stock_threshold")))
-        }
-
-        migratedDb.query("SELECT COUNT(*) FROM categories").use { cursor ->
-            assertTrue(cursor.moveToFirst())
-            assertEquals(0, cursor.getInt(0))
-        }
-        migratedDb.query("SELECT COUNT(*) FROM history_entries").use { cursor ->
-            assertTrue(cursor.moveToFirst())
-            assertEquals(0, cursor.getInt(0))
-        }
+    @After
+    fun tearDown() {
+        context.deleteDatabase(databaseName)
     }
 
     @Test
-    fun `migration from 2 to 3 keeps existing products and defaults opened to false`() {
-        val dbName = "migration-test-2-3"
-        helper.createDatabase(dbName, 2).apply {
-            execSQL(
+    fun `a version 1 database migrates to the current version without losing data`() =
+        runTest {
+            createVersion1Database()
+
+            val database =
+                Room
+                    .databaseBuilder(context, AppDatabase::class.java, databaseName)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                    .allowMainThreadQueries()
+                    .build()
+
+            try {
+                // Opening the database runs both migrations and makes Room validate the final schema.
+                val products = database.productDao().getAllOnce()
+
+                assertEquals(1, products.size)
+                val product = products.first()
+                assertEquals("Riz basmati", product.name)
+                assertEquals(2.0, product.quantity, 0.0)
+                assertNull(product.expirationDate)
+                assertNull(product.category)
+                assertNull(product.lowStockThreshold)
+                assertFalse(product.opened)
+
+                assertTrue(database.historyEntryDao().getAllOnce().isEmpty())
+            } finally {
+                database.close()
+            }
+        }
+
+    /** The products table as Room created it in version 1, before expiration dates and categories. */
+    private fun createVersion1Database() {
+        val databaseFile = context.getDatabasePath(databaseName)
+        databaseFile.parentFile?.mkdirs()
+        SQLiteDatabase.openOrCreateDatabase(databaseFile, null).use { database ->
+            database.execSQL(
+                "CREATE TABLE IF NOT EXISTS `products` (" +
+                    "`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, " +
+                    "`name` TEXT NOT NULL, " +
+                    "`quantity` REAL NOT NULL, " +
+                    "`unit` TEXT NOT NULL, " +
+                    "`updated_at` INTEGER NOT NULL)",
+            )
+            database.execSQL(
                 "INSERT INTO products (id, name, quantity, unit, updated_at) " +
                     "VALUES (1, 'Riz basmati', 2.0, 'PIECE', 1000)",
             )
-            close()
-        }
-
-        val migratedDb = helper.runMigrationsAndValidate(dbName, 3, true, MIGRATION_2_3)
-
-        migratedDb.query("SELECT * FROM products WHERE id = 1").use { cursor ->
-            assertTrue(cursor.moveToFirst())
-            assertEquals("Riz basmati", cursor.getString(cursor.getColumnIndexOrThrow("name")))
-            assertEquals(0, cursor.getInt(cursor.getColumnIndexOrThrow("opened")))
+            database.version = 1
         }
     }
 }

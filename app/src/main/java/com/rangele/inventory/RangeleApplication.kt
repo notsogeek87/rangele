@@ -12,6 +12,7 @@ class RangeleApplication :
     override fun onCreate() {
         super.onCreate()
         container = AppContainer(this)
+        container.scheduleExpirationChecks()
     }
 
     // On-demand initialization: WorkManager reads this the first time WorkManager.getInstance(context) is
