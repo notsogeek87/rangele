@@ -2,10 +2,12 @@ package com.rangele.inventory.ui.addproduct
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.InventoryRepository
+import com.rangele.inventory.data.repository.PantryRepository
 import com.rangele.inventory.util.toEpochMillis
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -22,6 +24,8 @@ data class AddProductUiState(
     val opened: Boolean = false,
     val category: String? = null,
     val availableCategories: List<String> = emptyList(),
+    val pantryId: Long? = null,
+    val availablePantries: List<PantryEntity> = emptyList(),
     val lowStockThresholdText: String = "",
     val mergeSuggestion: ProductEntity? = null,
     val isSaved: Boolean = false,
@@ -34,14 +38,26 @@ data class AddProductUiState(
 class AddProductViewModel(
     private val repository: InventoryRepository,
     private val categoryRepository: CategoryRepository,
+    private val pantryRepository: PantryRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(AddProductUiState())
     val uiState: StateFlow<AddProductUiState> = _uiState.asStateFlow()
+
+    private var pantryManuallySelected = false
 
     init {
         viewModelScope.launch {
             categoryRepository.observeCategories().collect { categories ->
                 _uiState.update { it.copy(availableCategories = categories.map { category -> category.name }) }
+            }
+        }
+        viewModelScope.launch {
+            pantryRepository.observePantries().collect { pantries ->
+                _uiState.update { state ->
+                    val pantryId =
+                        if (pantryManuallySelected) state.pantryId else pantries.firstOrNull { it.isDefault }?.id
+                    state.copy(availablePantries = pantries, pantryId = pantryId)
+                }
             }
         }
     }
@@ -70,6 +86,11 @@ class AddProductViewModel(
         _uiState.update { it.copy(category = category) }
     }
 
+    fun onPantryChanged(pantryId: Long?) {
+        pantryManuallySelected = true
+        _uiState.update { it.copy(pantryId = pantryId) }
+    }
+
     fun onLowStockThresholdTextChanged(text: String) {
         _uiState.update { it.copy(lowStockThresholdText = text) }
     }
@@ -91,6 +112,7 @@ class AddProductViewModel(
                     category = state.category,
                     lowStockThreshold = state.enteredLowStockThreshold,
                     opened = state.opened,
+                    pantryId = state.pantryId,
                 )
                 _uiState.update { it.copy(isSaved = true) }
             }
@@ -119,6 +141,7 @@ class AddProductViewModel(
                 category = state.category,
                 lowStockThreshold = state.enteredLowStockThreshold,
                 opened = state.opened,
+                pantryId = state.pantryId,
             )
             _uiState.update { it.copy(isSaved = true, mergeSuggestion = null) }
         }

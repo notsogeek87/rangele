@@ -41,6 +41,7 @@ import coil.compose.AsyncImage
 import com.rangele.inventory.barcode.OffProduct
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.ui.components.CategoryDropdown
+import com.rangele.inventory.ui.components.PantryDropdown
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
 
@@ -296,6 +297,13 @@ private fun ProductForm(
             categories = uiState.availableCategories,
             selectedCategory = uiState.category,
             onCategorySelected = viewModel::onCategoryChanged,
+            modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+        )
+
+        PantryDropdown(
+            pantries = uiState.availablePantries,
+            selectedPantryId = uiState.pantryId,
+            onPantrySelected = viewModel::onPantryChanged,
             modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
         )
 

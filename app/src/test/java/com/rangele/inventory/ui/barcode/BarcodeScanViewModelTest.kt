@@ -8,6 +8,7 @@ import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.testutil.FakeCategoryRepository
 import com.rangele.inventory.testutil.FakeInventoryRepository
 import com.rangele.inventory.testutil.FakeOpenFoodFactsClient
+import com.rangele.inventory.testutil.FakePantryRepository
 import com.rangele.inventory.testutil.MainDispatcherRule
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -24,7 +25,13 @@ class BarcodeScanViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val existing = productWithBarcode("111")
             val repository = FakeInventoryRepository(listOf(existing))
-            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), FakeOpenFoodFactsClient())
+            val viewModel =
+                BarcodeScanViewModel(
+                    repository,
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    FakeOpenFoodFactsClient(),
+                )
 
             viewModel.onBarcodeDetected("111")
 
@@ -38,7 +45,13 @@ class BarcodeScanViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val existing = productWithBarcode("111")
             val repository = FakeInventoryRepository(listOf(existing))
-            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), FakeOpenFoodFactsClient())
+            val viewModel =
+                BarcodeScanViewModel(
+                    repository,
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    FakeOpenFoodFactsClient(),
+                )
             viewModel.onBarcodeDetected("111")
 
             viewModel.onAdjustExistingQuantity(1.0)
@@ -53,7 +66,13 @@ class BarcodeScanViewModelTest {
         runTest(mainDispatcherRule.dispatcher) {
             val offProduct = OffProduct(barcode = "222", name = "Nutella", brand = "Ferrero", packageFormat = "400 g")
             val client = FakeOpenFoodFactsClient(mapOf("222" to OffLookupResult.Found(offProduct)))
-            val viewModel = BarcodeScanViewModel(FakeInventoryRepository(), FakeCategoryRepository(), client)
+            val viewModel =
+                BarcodeScanViewModel(
+                    FakeInventoryRepository(),
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    client,
+                )
 
             viewModel.onBarcodeDetected("222")
 
@@ -69,7 +88,7 @@ class BarcodeScanViewModelTest {
             val offProduct = OffProduct(barcode = "222", name = "Nutella")
             val client = FakeOpenFoodFactsClient(mapOf("222" to OffLookupResult.Found(offProduct)))
             val repository = FakeInventoryRepository()
-            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), client)
+            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), FakePantryRepository(), client)
             viewModel.onBarcodeDetected("222")
 
             viewModel.onQuantityTextChanged("3")
@@ -86,7 +105,13 @@ class BarcodeScanViewModelTest {
     fun `an unknown barcode allows creating the product manually`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository()
-            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), FakeOpenFoodFactsClient())
+            val viewModel =
+                BarcodeScanViewModel(
+                    repository,
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    FakeOpenFoodFactsClient(),
+                )
 
             viewModel.onBarcodeDetected("333")
             assertTrue(viewModel.uiState.value.lookup is BarcodeLookupState.NotFound)
@@ -110,7 +135,13 @@ class BarcodeScanViewModelTest {
                     override suspend fun lookupProduct(barcode: String): OffLookupResult =
                         if (shouldFail) OffLookupResult.NetworkError else OffLookupResult.Found(offProduct)
                 }
-            val viewModel = BarcodeScanViewModel(FakeInventoryRepository(), FakeCategoryRepository(), client)
+            val viewModel =
+                BarcodeScanViewModel(
+                    FakeInventoryRepository(),
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    client,
+                )
 
             viewModel.onBarcodeDetected("444")
             assertTrue(viewModel.uiState.value.lookup is BarcodeLookupState.Error)
@@ -125,7 +156,13 @@ class BarcodeScanViewModelTest {
     fun `a second detection is ignored while a lookup is already resolving or resolved`() =
         runTest(mainDispatcherRule.dispatcher) {
             val client = FakeOpenFoodFactsClient()
-            val viewModel = BarcodeScanViewModel(FakeInventoryRepository(), FakeCategoryRepository(), client)
+            val viewModel =
+                BarcodeScanViewModel(
+                    FakeInventoryRepository(),
+                    FakeCategoryRepository(),
+                    FakePantryRepository(),
+                    client,
+                )
 
             viewModel.onBarcodeDetected("111")
             viewModel.onBarcodeDetected("999")
@@ -139,7 +176,7 @@ class BarcodeScanViewModelTest {
             val offProduct = OffProduct(barcode = "555", name = "Nutella")
             val client = FakeOpenFoodFactsClient(mapOf("555" to OffLookupResult.Found(offProduct)))
             val repository = FakeInventoryRepository()
-            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), client)
+            val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), FakePantryRepository(), client)
             viewModel.onBarcodeDetected("555")
 
             viewModel.onNameChanged("")

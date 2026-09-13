@@ -28,6 +28,10 @@ Fonctionnalités V3 (au-dessus du MVP) :
 - **Liste de courses suggérée** : écran listant les produits sous leur `lowStockThreshold`
   (seuil optionnel par produit, comparé brut à la quantité — pas de conversion d'unité) ; les
   produits cochés peuvent être partagés en texte simple via l'intent de partage Android.
+- **Placards** : champ optionnel sur le produit, gérés (créer/renommer/supprimer) directement
+  dans l'écran Paramètres, où l'on choisit aussi le placard par défaut (présélectionné à chaque
+  ajout de produit — manuel, scan de code-barres ou revue de ticket). Supprimer un placard
+  détache simplement les produits qui l'utilisaient.
 
 Le MVP et la V3 sont implémentés (`app/src/main/java/com/rangele/inventory`) : Room, repository,
 écrans Compose (inventaire, ajout, scan/vérification de ticket, catégories, historique, liste de
@@ -82,10 +86,10 @@ Les rapports de tests/lint sont aussi publiés en artifact (pas en release).
 
 Structure de package sous `com.rangele.inventory` (voir README) :
 - `data` — entités Room, DAO, base de données, repository, et `data/settings` (Preferences
-  DataStore pour les réglages de notification). `exportSchema = true` depuis la V3 (migrations 1→2
-  puis 2→3, voir `Migrations.kt`) ; le plugin Gradle `androidx.room` exporte le schéma dans un dossier
-  différent par flavor (`room { schemaDirectory(...) }` dans `app/build.gradle.kts`) pour éviter
-  que les tâches KSP de `staging`/`production` écrivent en parallèle dans le même fichier.
+  DataStore pour les réglages de notification). `exportSchema = true` depuis la V3 (migrations 1→2,
+  2→3, 3→4 puis 4→5, voir `Migrations.kt`) ; le plugin Gradle `androidx.room` exporte le schéma dans
+  un dossier différent par flavor (`room { schemaDirectory(...) }` dans `app/build.gradle.kts`) pour
+  éviter que les tâches KSP de `staging`/`production` écrivent en parallèle dans le même fichier.
 - `ocr` — reconnaissance de texte (ML Kit `text-recognition`) et heuristique de parsing des lignes
   d'un ticket de caisse en produits/quantités.
 - `ui` — écrans Jetpack Compose en MVVM (ViewModel + `lifecycle-viewmodel-compose`), navigation via
