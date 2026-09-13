@@ -134,3 +134,25 @@ val MIGRATION_7_8 =
             db.execSQL("ALTER TABLE products ADD COLUMN in_shopping_list INTEGER NOT NULL DEFAULT 0")
         }
     }
+
+/**
+ * Ajoute le cache local des produits Open Food Facts (une ligne par code-barres normalisé), pour
+ * éviter de reredemander l'API à chaque scan d'un code déjà consulté. Voir
+ * [com.rangele.inventory.data.local.entity.OffProductCacheEntity].
+ */
+val MIGRATION_8_9 =
+    object : Migration(8, 9) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL(
+                "CREATE TABLE IF NOT EXISTS off_product_cache (" +
+                    "barcode TEXT NOT NULL PRIMARY KEY, " +
+                    "found INTEGER NOT NULL, " +
+                    "name TEXT, " +
+                    "brand TEXT, " +
+                    "package_format TEXT, " +
+                    "category TEXT, " +
+                    "image_url TEXT, " +
+                    "fetched_at INTEGER NOT NULL)",
+            )
+        }
+    }

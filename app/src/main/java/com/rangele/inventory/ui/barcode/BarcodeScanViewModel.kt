@@ -4,7 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rangele.inventory.barcode.OffLookupResult
 import com.rangele.inventory.barcode.OffProduct
-import com.rangele.inventory.barcode.OpenFoodFactsClient
+import com.rangele.inventory.barcode.OffProductRepository
 import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
@@ -63,7 +63,7 @@ class BarcodeScanViewModel(
     private val inventoryRepository: InventoryRepository,
     private val categoryRepository: CategoryRepository,
     private val pantryRepository: PantryRepository,
-    private val openFoodFactsClient: OpenFoodFactsClient,
+    private val offProductRepository: OffProductRepository,
 ) : ViewModel() {
     private val _uiState = MutableStateFlow(BarcodeUiState())
     val uiState: StateFlow<BarcodeUiState> = _uiState.asStateFlow()
@@ -102,7 +102,7 @@ class BarcodeScanViewModel(
                 _uiState.update { it.copy(lookup = BarcodeLookupState.AlreadyInInventory(existing)) }
                 return@launch
             }
-            when (val result = openFoodFactsClient.lookupProduct(barcode)) {
+            when (val result = offProductRepository.lookupProduct(barcode)) {
                 is OffLookupResult.Found -> {
                     val state = _uiState.value
                     _uiState.update {
@@ -188,6 +188,25 @@ class BarcodeScanViewModel(
         val barcode = pendingBarcode ?: return
         _uiState.update { it.copy(lookup = BarcodeLookupState.Scanning) }
         onBarcodeDetected(barcode)
+    }
+
+    /**
+     * Force une actualisation depuis Open Food Facts en ignorant le cache — pour un futur bouton
+     * « Actualiser les informations » sur un produit déjà trouvé.
+     */
+    fun onForceRefresh() {
+        val barcode = pendingBarcode ?: return
+        _uiState.update { it.copy(lookup = BarcodeLookupState.Loading) }
+        viewModelScope.launch {
+            when (val result = offProductRepository.refreshProduct(barcode)) {
+                is OffLookupResult.Found ->
+                    _uiState.update { it.copy(lookup = BarcodeLookupState.Found(result.product)) }
+                is OffLookupResult.NotFound ->
+                    _uiState.update { it.copy(lookup = BarcodeLookupState.NotFound(barcode)) }
+                OffLookupResult.NetworkError ->
+                    _uiState.update { it.copy(lookup = BarcodeLookupState.Error(barcode)) }
+            }
+        }
     }
 
     fun onRetryScan() {

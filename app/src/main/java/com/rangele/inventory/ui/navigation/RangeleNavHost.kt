@@ -233,7 +233,7 @@ private fun rememberBarcodeScanViewModel(
                         container.inventoryRepository,
                         container.categoryRepository,
                         container.pantryRepository,
-                        container.openFoodFactsClient,
+                        container.offProductRepository,
                     )
                 }
             },

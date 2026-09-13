@@ -4,6 +4,8 @@ import android.content.Context
 import androidx.room.Room
 import com.rangele.inventory.backup.BackupRepository
 import com.rangele.inventory.backup.BackupRepositoryImpl
+import com.rangele.inventory.barcode.OffProductRepository
+import com.rangele.inventory.barcode.OffProductRepositoryImpl
 import com.rangele.inventory.barcode.OpenFoodFactsClient
 import com.rangele.inventory.barcode.OpenFoodFactsClientImpl
 import com.rangele.inventory.data.local.AppDatabase
@@ -14,6 +16,7 @@ import com.rangele.inventory.data.local.MIGRATION_4_5
 import com.rangele.inventory.data.local.MIGRATION_5_6
 import com.rangele.inventory.data.local.MIGRATION_6_7
 import com.rangele.inventory.data.local.MIGRATION_7_8
+import com.rangele.inventory.data.local.MIGRATION_8_9
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.CategoryRepositoryImpl
 import com.rangele.inventory.data.repository.HistoryRepository
@@ -62,6 +65,7 @@ class AppContainer(
                 MIGRATION_5_6,
                 MIGRATION_6_7,
                 MIGRATION_7_8,
+                MIGRATION_8_9,
             ).build()
 
     val inventoryRepository: InventoryRepository =
@@ -84,6 +88,9 @@ class AppContainer(
     val receiptParser: ReceiptParser = ReceiptParser()
 
     val openFoodFactsClient: OpenFoodFactsClient = OpenFoodFactsClientImpl()
+
+    val offProductRepository: OffProductRepository =
+        OffProductRepositoryImpl(openFoodFactsClient, database.offProductCacheDao(), applicationScope)
 
     private val expirationNotifier = ExpirationNotifier(appContext)
 
