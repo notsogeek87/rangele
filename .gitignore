@@ -9,6 +9,7 @@
 .cxx
 local.properties
 *.hprof
+.claude/scheduled_tasks.lock
 /app/build
 /app/release
 /app/debug

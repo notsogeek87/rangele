@@ -96,7 +96,7 @@ class InventoryViewModelTest {
         }
 
     @Test
-    fun `decrement removes the product once its quantity reaches zero`() =
+    fun `decrement to zero keeps the product in the inventory`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 1.0)))
             val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
@@ -107,9 +107,14 @@ class InventoryViewModelTest {
                     .first(),
             )
 
-            assertTrue(
+            // Un produit épuisé reste visible : c'est ce qui permet de le retrouver, de le
+            // réapprovisionner et de le voir remonter dans la liste de courses suggérée.
+            assertEquals(
+                0.0,
                 viewModel.uiState.value.products
-                    .isEmpty(),
+                    .single()
+                    .quantity,
+                0.0,
             )
         }
 
