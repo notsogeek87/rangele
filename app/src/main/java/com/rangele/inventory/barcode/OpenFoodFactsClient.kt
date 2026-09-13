@@ -28,8 +28,7 @@ class OpenFoodFactsClientImpl : OpenFoodFactsClient {
                     // one retry after a short pause avoids surfacing an error the user would just retry themselves.
                     delay(RETRY_DELAY_MILLIS)
                     parseOffResponse(barcode, fetch(barcode))
-                }
-                .getOrElse { OffLookupResult.NetworkError }
+                }.getOrElse { OffLookupResult.NetworkError }
         }
 
     private fun fetch(barcode: String): String {
