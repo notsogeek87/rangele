@@ -76,9 +76,12 @@ class BarcodeScanViewModel(
         }
         viewModelScope.launch {
             pantryRepository.observePantries().collect { pantries ->
+                val defaultPantryId =
+                    pantries
+                        .firstOrNull { it.isDefault }
+                        ?.id
                 _uiState.update { state ->
-                    val pantryId =
-                        if (pantryManuallySelected) state.pantryId else pantries.firstOrNull { it.isDefault }?.id
+                    val pantryId = if (pantryManuallySelected) state.pantryId else defaultPantryId
                     state.copy(availablePantries = pantries, pantryId = pantryId)
                 }
             }
@@ -175,12 +178,16 @@ class BarcodeScanViewModel(
     fun onRetryScan() {
         pendingBarcode = null
         pantryManuallySelected = false
-        _uiState.update {
+        _uiState.update { state ->
+            val defaultPantryId =
+                state.availablePantries
+                    .firstOrNull { it.isDefault }
+                    ?.id
             BarcodeUiState(
                 lookup = BarcodeLookupState.Scanning,
-                availableCategories = it.availableCategories,
-                availablePantries = it.availablePantries,
-                pantryId = it.availablePantries.firstOrNull { pantry -> pantry.isDefault }?.id,
+                availableCategories = state.availableCategories,
+                availablePantries = state.availablePantries,
+                pantryId = defaultPantryId,
             )
         }
     }
