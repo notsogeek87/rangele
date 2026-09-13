@@ -26,7 +26,8 @@ data class AddProductUiState(
     val availableCategories: List<String> = emptyList(),
     val pantryId: Long? = null,
     val availablePantries: List<PantryEntity> = emptyList(),
-    val lowStockThresholdText: String = "",
+    /** Pré-rempli : le formulaire passe toujours sa valeur, le défaut du repository ne s'y applique pas. */
+    val lowStockThresholdText: String = "1",
     val mergeSuggestion: ProductEntity? = null,
     val isSaved: Boolean = false,
 ) {

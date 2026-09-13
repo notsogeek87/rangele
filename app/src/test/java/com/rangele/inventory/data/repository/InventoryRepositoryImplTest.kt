@@ -199,6 +199,21 @@ class InventoryRepositoryImplTest {
         }
 
     @Test
+    fun `a new product gets the default low stock threshold and is suggested once down to one unit`() =
+        runTest {
+            // Sans réglage de la part de l'utilisateur : le seuil par défaut suffit à faire
+            // remonter le produit en liste de courses quand il n'en reste plus qu'un.
+            val id = repository.insertAsNew("Coquillettes", 3.0, QuantityUnit.PIECE)
+
+            assertEquals(1.0, repository.getById(id)?.lowStockThreshold ?: -1.0, 0.0)
+            assertTrue(repository.observeLowStockProducts().first().none { it.id == id })
+
+            repository.setQuantity(id, 1.0)
+
+            assertTrue(repository.observeLowStockProducts().first().any { it.id == id })
+        }
+
+    @Test
     fun `low stock suggestion follows quantity less than or equal to threshold, including a zero quantity`() =
         runTest {
             val aboveThreshold = repository.insertAsNew("Farine", 5.0, QuantityUnit.KILOGRAM)
