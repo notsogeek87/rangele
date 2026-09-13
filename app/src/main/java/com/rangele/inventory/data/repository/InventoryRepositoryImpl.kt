@@ -82,12 +82,16 @@ class InventoryRepositoryImpl(
         if (newQuantity < existing.quantity) {
             logWithdrawal(existing.name, existing.quantity - newQuantity, existing.unit)
         }
-        productDao.update(
-            existing.copy(
-                quantity = newQuantity,
-                updatedAt = System.currentTimeMillis(),
-            ),
-        )
+        if (newQuantity == 0.0) {
+            productDao.deleteById(productId)
+        } else {
+            productDao.update(
+                existing.copy(
+                    quantity = newQuantity,
+                    updatedAt = System.currentTimeMillis(),
+                ),
+            )
+        }
     }
 
     override suspend fun adjustQuantity(

@@ -95,7 +95,12 @@ class FakeInventoryRepository(
         productId: Long,
         quantity: Double,
     ) {
-        replace(productId) { it.copy(quantity = max(0.0, quantity)) }
+        val newQuantity = max(0.0, quantity)
+        if (newQuantity == 0.0) {
+            products.value = products.value.filterNot { it.id == productId }
+        } else {
+            replace(productId) { it.copy(quantity = newQuantity) }
+        }
     }
 
     override suspend fun adjustQuantity(

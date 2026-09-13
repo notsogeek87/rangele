@@ -158,13 +158,12 @@ class BarcodeScanViewModel(
         }
     }
 
-    /** +/- on the "already present" screen, one step of the product's own unit — same as the inventory list. */
+    /** Ajouter/Retirer on the "already present" screen: one step of the product's own unit, then back to the list. */
     fun onAdjustExistingQuantity(delta: Double) {
         val existing = (_uiState.value.lookup as? BarcodeLookupState.AlreadyInInventory)?.existing ?: return
         viewModelScope.launch {
             inventoryRepository.adjustQuantity(existing.id, delta)
-            val refreshed = inventoryRepository.getById(existing.id) ?: return@launch
-            _uiState.update { it.copy(lookup = BarcodeLookupState.AlreadyInInventory(refreshed)) }
+            _uiState.update { it.copy(isSaved = true) }
         }
     }
 

@@ -96,9 +96,9 @@ class InventoryViewModelTest {
         }
 
     @Test
-    fun `decrement never pushes the quantity below zero`() =
+    fun `decrement removes the product once its quantity reaches zero`() =
         runTest(mainDispatcherRule.dispatcher) {
-            val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 0.0)))
+            val repository = FakeInventoryRepository(listOf(product(1, "Pommes", quantity = 1.0)))
             val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
 
@@ -107,13 +107,7 @@ class InventoryViewModelTest {
                     .first(),
             )
 
-            assertEquals(
-                0.0,
-                viewModel.uiState.value.products
-                    .first()
-                    .quantity,
-                0.0,
-            )
+            assertTrue(viewModel.uiState.value.products.isEmpty())
         }
 
     @Test
