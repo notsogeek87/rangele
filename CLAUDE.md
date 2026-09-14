@@ -9,7 +9,8 @@ placard/cuisine, avec import assisté par scan de ticket de courses (CameraX + M
 local sur l'appareil, sans backend.
 
 Fonctionnalités MVP :
-- **Inventaire** : liste des produits en stock, triée par nom, avec recherche.
+- **Inventaire** : liste des produits en stock, triée du dernier ajouté au plus ancien par
+  défaut (tri par nom ou par date de péremption au choix, menu « ⇅ »), avec recherche.
 - **Ajout manuel** : nom, quantité, unité — avec détection de doublon (propose de fusionner avec
   un produit existant plutôt que de le dupliquer).
 - **Retrait/ajustement** : +/- ou saisie directe de la quantité, suppression, depuis la liste.
@@ -159,8 +160,8 @@ Les rapports de tests/lint sont aussi publiés en artifact (pas en release).
 
 Structure de package sous `com.rangele.inventory` (voir README) :
 - `data` — entités Room, DAO, base de données, repository, et `data/settings` (Preferences
-  DataStore pour les réglages de notification). `exportSchema = true` depuis la V3 (migrations 1→2,
-  2→3, 3→4 puis 4→5, voir `Migrations.kt`) ; le plugin Gradle `androidx.room` exporte le schéma dans
+  DataStore pour les réglages de notification). `exportSchema = true` depuis la V3 (migrations 1→2
+  jusqu'à 10→11, voir `Migrations.kt`) ; le plugin Gradle `androidx.room` exporte le schéma dans
   un dossier différent par flavor (`room { schemaDirectory(...) }` dans `app/build.gradle.kts`) pour
   éviter que les tâches KSP de `staging`/`production` écrivent en parallèle dans le même fichier.
 - `ocr` — reconnaissance de texte (ML Kit `text-recognition`) et heuristique de parsing des lignes

@@ -1,5 +1,10 @@
 package com.rangele.inventory.ui.inventory
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -11,6 +16,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -22,6 +28,7 @@ import androidx.compose.material.icons.filled.AddShoppingCart
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCodeScanner
@@ -37,13 +44,14 @@ import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.FilterChip
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SmallFloatingActionButton
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -58,6 +66,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.R
@@ -98,6 +107,7 @@ fun InventoryScreen(
     var menuExpanded by remember { mutableStateOf(false) }
     var sortMenuExpanded by remember { mutableStateOf(false) }
     var searchQueryInput by remember { mutableStateOf(uiState.searchQuery) }
+    var actionsExpanded by remember { mutableStateOf(false) }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
@@ -117,6 +127,13 @@ fun InventoryScreen(
                         Icon(Icons.Default.SwapVert, contentDescription = "Trier")
                     }
                     DropdownMenu(expanded = sortMenuExpanded, onDismissRequest = { sortMenuExpanded = false }) {
+                        DropdownMenuItem(
+                            text = { Text("Trier par ajout récent") },
+                            onClick = {
+                                viewModel.onSortModeChanged(SortMode.RECENT)
+                                sortMenuExpanded = false
+                            },
+                        )
                         DropdownMenuItem(
                             text = { Text("Trier par nom") },
                             onClick = {
@@ -182,39 +199,14 @@ fun InventoryScreen(
             )
         },
         floatingActionButton = {
-            Column(horizontalAlignment = Alignment.End) {
-                ExtendedFloatingActionButton(
-                    onClick = onScanBarcodeClick,
-                    icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
-                    text = { Text("Scanner un code-barres") },
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                )
-                Spacer(Modifier.height(12.dp))
-                ExtendedFloatingActionButton(
-                    onClick = onScanReceiptClick,
-                    icon = { Icon(Icons.Default.DocumentScanner, contentDescription = null) },
-                    text = { Text("Scanner un ticket") },
-                    containerColor = MaterialTheme.colorScheme.secondary,
-                    contentColor = MaterialTheme.colorScheme.onSecondary,
-                )
-                Spacer(Modifier.height(12.dp))
-                ExtendedFloatingActionButton(
-                    onClick = onImportReceiptClick,
-                    icon = { Icon(Icons.Default.PhotoLibrary, contentDescription = null) },
-                    text = { Text("Importer un ticket") },
-                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
-                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
-                )
-                Spacer(Modifier.height(12.dp))
-                FloatingActionButton(
-                    onClick = onAddProductClick,
-                    containerColor = MaterialTheme.colorScheme.primary,
-                    contentColor = MaterialTheme.colorScheme.onPrimary,
-                ) {
-                    Icon(Icons.Default.Add, contentDescription = "Ajouter un produit")
-                }
-            }
+            InventoryActionButtons(
+                expanded = actionsExpanded,
+                onExpandedChange = { actionsExpanded = it },
+                onScanBarcodeClick = onScanBarcodeClick,
+                onAddProductClick = onAddProductClick,
+                onScanReceiptClick = onScanReceiptClick,
+                onImportReceiptClick = onImportReceiptClick,
+            )
         },
     ) { paddingValues ->
         Column(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
@@ -346,6 +338,123 @@ fun InventoryScreen(
             onDismiss = viewModel::onDismissCreatePantryPrompt,
             onConfirm = viewModel::onCreateFirstPantry,
         )
+    }
+}
+
+/**
+ * Bouton d'action principal de l'inventaire, en « speed dial ».
+ *
+ * Les quatre actions étaient auparavant empilées en permanence et mangeaient la moitié basse de
+ * l'écran, jusqu'à recouvrir la liste. Seul le scan de code-barres — de loin le geste le plus
+ * fréquent pour remplir le placard — reste donc visible et occupe la position la plus basse, la
+ * plus facile à atteindre au pouce ; les trois autres se déploient depuis le bouton juste
+ * au-dessus, qui se referme d'un second appui.
+ */
+@Composable
+private fun InventoryActionButtons(
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    onScanBarcodeClick: () -> Unit,
+    onAddProductClick: () -> Unit,
+    onScanReceiptClick: () -> Unit,
+    onImportReceiptClick: () -> Unit,
+) {
+    Column(horizontalAlignment = Alignment.End) {
+        AnimatedVisibility(
+            visible = expanded,
+            enter = fadeIn() + expandVertically(expandFrom = Alignment.Bottom),
+            exit = fadeOut() + shrinkVertically(shrinkTowards = Alignment.Bottom),
+        ) {
+            Column(horizontalAlignment = Alignment.End) {
+                SpeedDialAction(
+                    label = "Ajouter un produit",
+                    icon = Icons.Default.Add,
+                    containerColor = MaterialTheme.colorScheme.secondary,
+                    contentColor = MaterialTheme.colorScheme.onSecondary,
+                    onClick = {
+                        onExpandedChange(false)
+                        onAddProductClick()
+                    },
+                )
+                Spacer(Modifier.height(12.dp))
+                SpeedDialAction(
+                    label = "Scanner un ticket",
+                    icon = Icons.Default.DocumentScanner,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = {
+                        onExpandedChange(false)
+                        onScanReceiptClick()
+                    },
+                )
+                Spacer(Modifier.height(12.dp))
+                SpeedDialAction(
+                    label = "Importer un ticket",
+                    icon = Icons.Default.PhotoLibrary,
+                    containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                    onClick = {
+                        onExpandedChange(false)
+                        onImportReceiptClick()
+                    },
+                )
+                Spacer(Modifier.height(12.dp))
+            }
+        }
+
+        SmallFloatingActionButton(
+            onClick = { onExpandedChange(!expanded) },
+            containerColor = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.primary,
+        ) {
+            Icon(
+                imageVector = if (expanded) Icons.Default.Close else Icons.Default.MoreHoriz,
+                contentDescription = if (expanded) "Fermer les autres actions" else "Autres façons d'ajouter",
+            )
+        }
+        Spacer(Modifier.height(12.dp))
+        ExtendedFloatingActionButton(
+            onClick = onScanBarcodeClick,
+            icon = { Icon(Icons.Default.QrCodeScanner, contentDescription = null) },
+            text = { Text("Scanner un code-barres") },
+            containerColor = MaterialTheme.colorScheme.primary,
+            contentColor = MaterialTheme.colorScheme.onPrimary,
+        )
+    }
+}
+
+/** Action secondaire du speed dial : une pastille et son libellé, lisibles par-dessus la liste. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun SpeedDialAction(
+    label: String,
+    icon: ImageVector,
+    containerColor: Color,
+    contentColor: Color,
+    onClick: () -> Unit,
+) {
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            contentColor = MaterialTheme.colorScheme.onSurface,
+            shape = MaterialTheme.shapes.small,
+            shadowElevation = 2.dp,
+            onClick = onClick,
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelLarge,
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        SmallFloatingActionButton(
+            onClick = onClick,
+            containerColor = containerColor,
+            contentColor = contentColor,
+        ) {
+            Icon(icon, contentDescription = null)
+        }
     }
 }
 

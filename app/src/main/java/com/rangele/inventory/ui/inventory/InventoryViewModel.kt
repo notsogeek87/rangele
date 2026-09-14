@@ -19,6 +19,8 @@ import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
 enum class SortMode {
+    /** Du dernier ajouté au plus ancien : ce qui vient d'entrer dans le placard est en tête. */
+    RECENT,
     NAME,
     EXPIRATION,
 }
@@ -27,7 +29,7 @@ data class InventoryUiState(
     val searchQuery: String = "",
     val products: List<ProductEntity> = emptyList(),
     val isLoading: Boolean = true,
-    val sortMode: SortMode = SortMode.NAME,
+    val sortMode: SortMode = SortMode.RECENT,
     val selectedCategory: String? = null,
     val availableCategories: List<String> = emptyList(),
 )
@@ -46,7 +48,7 @@ class InventoryViewModel(
     private val pantryRepository: PantryRepository,
 ) : ViewModel() {
     private val searchQuery = MutableStateFlow("")
-    private val sortMode = MutableStateFlow(SortMode.NAME)
+    private val sortMode = MutableStateFlow(SortMode.RECENT)
     private val selectedCategory = MutableStateFlow<String?>(null)
 
     private var pantryPromptDismissed = false
@@ -84,6 +86,7 @@ class InventoryViewModel(
                     query = filters.query,
                     category = filters.category,
                     sortByExpiration = filters.sortMode == SortMode.EXPIRATION,
+                    sortByRecent = filters.sortMode == SortMode.RECENT,
                 ).map { products ->
                     InventoryUiState(
                         searchQuery = filters.query,

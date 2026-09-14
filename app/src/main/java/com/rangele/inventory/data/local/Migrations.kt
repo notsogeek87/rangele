@@ -169,3 +169,17 @@ val MIGRATION_9_10 =
             db.execSQL("ALTER TABLE off_product_cache ADD COLUMN nutriscore TEXT")
         }
     }
+
+/**
+ * Ajoute la date d'ajout du produit (`products.created_at`), support du tri « ajout récent »
+ * devenu le tri par défaut de l'inventaire. Les produits déjà en base n'ont pas gardé trace de
+ * leur création : `updated_at` est la meilleure approximation disponible et sert donc de valeur
+ * de reprise (exact pour un produit jamais modifié depuis son ajout).
+ */
+val MIGRATION_10_11 =
+    object : Migration(10, 11) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE products ADD COLUMN created_at INTEGER NOT NULL DEFAULT 0")
+            db.execSQL("UPDATE products SET created_at = updated_at")
+        }
+    }

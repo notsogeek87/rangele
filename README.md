@@ -19,7 +19,8 @@ identité cohérente dans toute l'app.
 
 ## Fonctionnalités (MVP)
 
-- **Inventaire** : liste des produits en stock, triée par nom, avec recherche.
+- **Inventaire** : liste des produits en stock, triée du dernier ajouté au plus ancien par
+  défaut (tri par nom ou par date de péremption au choix, menu « ⇅ »), avec recherche.
 - **Ajout manuel** : nom, quantité, unité — avec détection de doublon (propose de fusionner
   avec un produit existant plutôt que de le dupliquer).
 - **Retrait/ajustement** : +/- ou saisie directe de la quantité, suppression, depuis la liste.

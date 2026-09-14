@@ -25,6 +25,7 @@ class InventoryViewModelTest {
         unit: QuantityUnit = QuantityUnit.PIECE,
         category: String? = null,
         expirationDate: Long? = null,
+        createdAt: Long = 0L,
     ) = ProductEntity(
         id = id,
         name = name,
@@ -32,6 +33,9 @@ class InventoryViewModelTest {
         unit = unit.name,
         category = category,
         expirationDate = expirationDate,
+        // Même date d'ajout par défaut pour tous : les tests qui ne portent pas sur le tri
+        // « ajout récent » retombent alors sur le départage par nom, donc sur un ordre stable.
+        createdAt = createdAt,
     )
 
     /** Keeps the WhileSubscribed StateFlow active for the duration of a test. */
@@ -40,14 +44,42 @@ class InventoryViewModelTest {
     }
 
     @Test
-    fun `products are exposed sorted alphabetically`() =
+    fun `products are sorted from the most recently added by default`() =
         runTest(mainDispatcherRule.dispatcher) {
             val repository =
                 FakeInventoryRepository(
-                    listOf(product(1, "Yaourt"), product(2, "Ananas"), product(3, "Beurre")),
+                    listOf(
+                        product(1, "Ananas", createdAt = 1_000L),
+                        product(2, "Beurre", createdAt = 3_000L),
+                        product(3, "Yaourt", createdAt = 2_000L),
+                    ),
                 )
             val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
             viewModel.collectInBackground(backgroundScope)
+
+            assertEquals(SortMode.RECENT, viewModel.uiState.value.sortMode)
+            assertEquals(
+                listOf("Beurre", "Yaourt", "Ananas"),
+                viewModel.uiState.value.products
+                    .map { it.name },
+            )
+        }
+
+    @Test
+    fun `sorting by name ignores the date the products were added`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository =
+                FakeInventoryRepository(
+                    listOf(
+                        product(1, "Yaourt", createdAt = 3_000L),
+                        product(2, "Ananas", createdAt = 1_000L),
+                        product(3, "Beurre", createdAt = 2_000L),
+                    ),
+                )
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
+            viewModel.collectInBackground(backgroundScope)
+
+            viewModel.onSortModeChanged(SortMode.NAME)
 
             assertEquals(
                 listOf("Ananas", "Beurre", "Yaourt"),

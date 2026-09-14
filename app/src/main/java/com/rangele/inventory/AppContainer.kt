@@ -9,6 +9,7 @@ import com.rangele.inventory.barcode.OffProductRepositoryImpl
 import com.rangele.inventory.barcode.OpenFoodFactsClient
 import com.rangele.inventory.barcode.OpenFoodFactsClientImpl
 import com.rangele.inventory.data.local.AppDatabase
+import com.rangele.inventory.data.local.MIGRATION_10_11
 import com.rangele.inventory.data.local.MIGRATION_1_2
 import com.rangele.inventory.data.local.MIGRATION_2_3
 import com.rangele.inventory.data.local.MIGRATION_3_4
@@ -68,6 +69,7 @@ class AppContainer(
                 MIGRATION_7_8,
                 MIGRATION_8_9,
                 MIGRATION_9_10,
+                MIGRATION_10_11,
             ).build()
 
     val inventoryRepository: InventoryRepository =
