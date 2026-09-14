@@ -6,6 +6,7 @@ import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.local.dao.OffProductCacheDao
 import com.rangele.inventory.data.local.entity.OffProductCacheEntity
 import com.rangele.inventory.testutil.FakeOpenFoodFactsClient
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
