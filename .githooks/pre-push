@@ -1,0 +1,80 @@
+#!/usr/bin/env bash
+# Garde-fou avant `git push` — objectif : plus aucun build KO sur `staging`/`main`.
+#
+# Activé par `git config core.hooksPath .githooks` (fait automatiquement en session Claude Code
+# sur le web par `.claude/hooks/session-start.sh` ; à lancer une fois à la main sur une machine
+# de dev, voir CLAUDE.md).
+#
+# Ce hook fait deux choses :
+#   1. lance `scripts/verify.sh` (ktlint + vérifications statiques, + Gradle quand il est utilisable) ;
+#   2. si la cible du push est `staging` ou `main`, refuse le push tant que le commit fusionné
+#      n'a pas de run CI vert — c'est la seule preuve que ça compile et que les tests passent.
+#
+# Échappatoires (à n'utiliser qu'en connaissance de cause) :
+#   SKIP_VERIFY=1 git push …     # saute tout le hook
+#   SKIP_CI_GUARD=1 git push …   # garde les vérifications, saute le contrôle de CI verte
+set -uo pipefail
+
+if [ "${SKIP_VERIFY:-}" = "1" ]; then
+    echo "pre-push : ignoré (SKIP_VERIFY=1)"
+    exit 0
+fi
+
+cd "$(git rev-parse --show-toplevel)" || exit 1
+
+# --- 1. Vérifications locales ------------------------------------------------
+if ! ./scripts/verify.sh; then
+    echo
+    echo "pre-push : push annulé, corriger les points ci-dessus (ou SKIP_VERIFY=1 git push … en dernier recours)."
+    exit 1
+fi
+
+# --- 2. Garde-fou sur staging/main ------------------------------------------
+[ "${SKIP_CI_GUARD:-}" = "1" ] && exit 0
+
+ZERO="0000000000000000000000000000000000000000"
+blocked=0
+
+while read -r _local_ref local_sha remote_ref _remote_sha; do
+    [ -z "${remote_ref:-}" ] && continue
+    [ "$local_sha" = "$ZERO" ] && continue # suppression de branche
+
+    case "$remote_ref" in
+        refs/heads/staging | refs/heads/main) ;;
+        *) continue ;;
+    esac
+
+    branch="${remote_ref#refs/heads/}"
+    echo
+    echo "Push vers '$branch' : contrôle de la CI avant d'y envoyer du code non vérifié…"
+
+    # Le commit poussé est en général un merge : la branche de travail fusionnée (2e parent) est
+    # celle que la CI a réellement construite. On accepte l'un ou l'autre.
+    candidates="$local_sha"
+    second_parent="$(git rev-parse -q --verify "$local_sha^2" 2>/dev/null)"
+    [ -n "$second_parent" ] && candidates="$candidates $second_parent"
+
+    green=0
+    for sha in $candidates; do
+        ./scripts/ci-status.sh "$sha"
+        case $? in
+            0) green=1; break ;;
+            4) echo "  (API GitHub injoignable : contrôle impossible, le push n'est pas bloqué)"; green=1; break ;;
+        esac
+    done
+
+    if [ "$green" != "1" ]; then
+        blocked=1
+        cat <<MSG
+
+✗ Push vers '$branch' refusé : aucun run CI vert pour le code poussé.
+  Marche à suivre :
+    1. git push -u origin <branche-de-travail>      # la CI tourne sur toutes les branches
+    2. scripts/ci-status.sh --wait <branche>        # attendre le vert
+    3. puis merger dans $branch et pousser
+  Forcer malgré tout (déconseillé) : SKIP_CI_GUARD=1 git push …
+MSG
+    fi
+done
+
+exit "$blocked"
