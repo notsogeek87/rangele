@@ -1,20 +1,40 @@
 name: Build
 
 on:
+  # Toutes les branches, pas seulement staging/main : c'est ce qui permet de valider une branche de
+  # travail AVANT de la fusionner. Tant que la CI ne tournait que sur staging/main, le premier retour
+  # sur la compilation et les tests arrivait une fois le code déjà sur une branche de livraison —
+  # d'où les builds KO en série. Les APK et les releases, eux, restent réservés à staging/main.
   push:
     branches:
-      - staging
-      - main
+      - "**"
+  workflow_dispatch:
 
 permissions:
   contents: write
 
+# Un nouveau push sur une branche de travail annule le run précédent (retour plus rapide, moins de
+# runners occupés) ; sur staging/main les runs sont conservés, chacun publiant sa propre release.
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: ${{ github.ref_name != 'staging' && github.ref_name != 'main' }}
+
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Publication (APK + releases) uniquement depuis les branches de livraison.
+      PUBLISH: ${{ github.ref_name == 'staging' || github.ref_name == 'main' }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Compute build identifiers
+        id: ids
+        run: |
+          echo "sha=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
+          # Un nom d'artifact ne peut pas contenir "/" : `claude/ma-branche` deviendrait invalide.
+          echo "ref_slug=$(echo "${{ github.ref_name }}" | tr '/' '-')" >> "$GITHUB_OUTPUT"
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
@@ -37,10 +57,6 @@ jobs:
       - name: Build debug APKs (staging + production variants)
         run: ./gradlew assembleDebug --no-daemon
 
-      - name: Compute short commit SHA
-        id: sha
-        run: echo "value=$(echo "${{ github.sha }}" | cut -c1-7)" >> "$GITHUB_OUTPUT"
-
       - name: Read app version name
         id: version
         run: |
@@ -52,6 +68,7 @@ jobs:
           echo "value=$version" >> "$GITHUB_OUTPUT"
 
       - name: Rename APKs for this commit
+        if: env.PUBLISH == 'true'
         run: |
           mkdir -p artifact
           find_apk() {
@@ -64,28 +81,31 @@ jobs:
             exit 1
           fi
           # Copie horodatée par commit, gardée comme artifact de run (voir CLAUDE.md).
-          cp "$staging_apk" "artifact/inventaire-placard-staging-${{ steps.sha.outputs.value }}.apk"
-          cp "$production_apk" "artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk"
+          cp "$staging_apk" "artifact/inventaire-placard-staging-${{ steps.ids.outputs.sha }}.apk"
+          cp "$production_apk" "artifact/inventaire-placard-main-${{ steps.ids.outputs.sha }}.apk"
           # Nom Yakwa-<version>-<build>, attaché à une release dédiée à ce build (voir plus bas) :
           # chaque push obtient sa propre release, pas un asset partagé qu'on écrase.
           cp "$staging_apk" "artifact/Yakwa-Staging-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk"
           cp "$production_apk" "artifact/Yakwa-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk"
 
       - name: Upload staging APK
+        if: env.PUBLISH == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: inventaire-placard-staging-${{ steps.sha.outputs.value }}
-          path: artifact/inventaire-placard-staging-${{ steps.sha.outputs.value }}.apk
+          name: inventaire-placard-staging-${{ steps.ids.outputs.sha }}
+          path: artifact/inventaire-placard-staging-${{ steps.ids.outputs.sha }}.apk
           if-no-files-found: error
 
       - name: Upload main APK
+        if: env.PUBLISH == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: inventaire-placard-main-${{ steps.sha.outputs.value }}
-          path: artifact/inventaire-placard-main-${{ steps.sha.outputs.value }}.apk
+          name: inventaire-placard-main-${{ steps.ids.outputs.sha }}
+          path: artifact/inventaire-placard-main-${{ steps.ids.outputs.sha }}.apk
           if-no-files-found: error
 
       - name: Publish staging release for this build
+        if: env.PUBLISH == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: staging-v${{ steps.version.outputs.value }}-${{ github.run_number }}
@@ -93,11 +113,12 @@ jobs:
           prerelease: true
           files: artifact/Yakwa-Staging-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk
           body: |
-            Build automatique depuis le commit `${{ steps.sha.outputs.value }}` (branche `${{ github.ref_name }}`).
+            Build automatique depuis le commit `${{ steps.ids.outputs.sha }}` (branche `${{ github.ref_name }}`).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Publish main release for this build
+        if: env.PUBLISH == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.version.outputs.value }}-${{ github.run_number }}
@@ -105,7 +126,7 @@ jobs:
           prerelease: false
           files: artifact/Yakwa-${{ steps.version.outputs.value }}-${{ github.run_number }}.apk
           body: |
-            Build automatique depuis le commit `${{ steps.sha.outputs.value }}` (branche `${{ github.ref_name }}`).
+            Build automatique depuis le commit `${{ steps.ids.outputs.sha }}` (branche `${{ github.ref_name }}`).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -113,7 +134,7 @@ jobs:
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: reports-${{ github.ref_name }}-${{ github.run_number }}
+          name: reports-${{ steps.ids.outputs.ref_slug }}-${{ github.run_number }}
           path: |
             app/build/reports/tests
             app/build/reports/ktlint
