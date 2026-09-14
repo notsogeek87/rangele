@@ -29,7 +29,7 @@ fun NutriscoreBadge(
     grade: String?,
     modifier: Modifier = Modifier,
 ) {
-    val normalized = grade?.lowercase()
+    val normalized = grade?.lowercase() ?: return
     val color = NutriscoreColors[normalized] ?: return
     Box(
         modifier = modifier.size(20.dp).background(color, CircleShape),
