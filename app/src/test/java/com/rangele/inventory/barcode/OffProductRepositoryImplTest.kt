@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.Executor
 
 /** Uses a real in-memory Room database (via Robolectric) so the cache's SQL — not a fake — is under test. */
 @RunWith(RobolectricTestRunner::class)
@@ -29,6 +30,13 @@ class OffProductRepositoryImplTest {
         database =
             Room
                 .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
+                // Room exécute ses requêtes suspend sur ses propres threads : advanceUntilIdle() rend la main
+                // alors qu'une écriture lancée en arrière-plan est encore en vol, et la lecture qui suit peut
+                // voir l'ancienne donnée (c'est ce qui faisait échouer le test d'actualisation en CI).
+                // Avec un exécuteur synchrone, tout le travail Room reste dans la coroutine appelante et
+                // advanceUntilIdle() attend donc réellement la fin de l'actualisation.
+                .setQueryExecutor(DIRECT_EXECUTOR)
+                .setTransactionExecutor(DIRECT_EXECUTOR)
                 .allowMainThreadQueries()
                 .build()
         cacheDao = database.offProductCacheDao()
@@ -238,6 +246,7 @@ class OffProductRepositoryImplTest {
     )
 
     private companion object {
+        val DIRECT_EXECUTOR = Executor { it.run() }
         const val BARCODE = "3017620422003"
         const val BASE_TIME = 1_700_000_000_000L
         const val TEN_DAYS_MILLIS = 10L * 24 * 60 * 60 * 1000

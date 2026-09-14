@@ -80,12 +80,12 @@ scripts/ktlint.sh        # vérifie (sortie 1 si violation) — équivalent de .
 scripts/ktlint.sh -F     # corrige automatiquement — équivalent de ./gradlew ktlintFormat
 ```
 
-**Règle : lancer `scripts/ktlint.sh` et obtenir une sortie 0 avant tout push.** Le jar est
-pré-téléchargé par le hook `SessionStart` (`.claude/hooks/session-start.sh`), donc la commande est
-instantanée. Un push sans cette vérification, c'est un build KO.
+**Règle : lancer `scripts/verify.sh` (qui inclut ktlint) et obtenir une sortie 0 avant tout push.**
+Le jar ktlint est pré-téléchargé par le hook `SessionStart` (`.claude/hooks/session-start.sh`), donc
+la commande est quasi instantanée. Voir « Avant de pousser » ci-dessous.
 
-Ce que ce script ne couvre pas : la compilation et les tests unitaires, qui exigent Gradle. Tant que
-`dl.google.com` reste bloqué, ils ne peuvent être validés que par la CI — l'annoncer plutôt que de
+Ce que ces scripts ne couvrent pas : la compilation et les tests unitaires, qui exigent Gradle. Tant
+que `dl.google.com` reste bloqué, ils ne peuvent être validés que par la CI — l'annoncer plutôt que de
 présenter un changement non testé comme vérifié. Pour lever cette limite, autoriser `dl.google.com`
 dans la politique réseau de l'environnement (voir https://code.claude.com/docs/en/claude-code-on-the-web).
 
@@ -100,12 +100,46 @@ androidTest — voir `MigrationTest` et `InventoryRepositoryImplTest`. `Migratio
 courante est générée au build et aucun schéma n'est versionné. Il crée donc une base v1 en SQL brut
 et laisse Room appliquer les migrations, ce qui déclenche la validation du schéma final par Room.
 
+## Avant de pousser
+
+Les builds KO de ce dépôt sont venus d'une seule cause : du code arrivait sur `staging`/`main` sans
+avoir jamais été compilé ni testé, parce que la CI ne tournait que sur ces deux branches. Le dispositif
+en place :
+
+```
+scripts/verify.sh            # tout ce qui est vérifiable ici (ktlint, marqueurs de conflit,
+                             # migrations Room, alias du version catalog, + Gradle si disponible)
+scripts/verify.sh --fast     # idem sans Gradle
+scripts/ci-status.sh --wait <branche>   # attend et affiche le verdict de la CI pour ce commit
+```
+
+- **Hook `pre-push`** (`.githooks/pre-push`) : lance `scripts/verify.sh` à chaque `git push` et, si la
+  cible est `staging` ou `main`, **refuse le push tant que le commit fusionné n'a pas de run CI vert**.
+  Il est activé automatiquement par le hook `SessionStart` ; sur une machine de dev, une fois pour
+  toutes : `git config core.hooksPath .githooks`. Échappatoires : `SKIP_VERIFY=1` (tout sauter),
+  `SKIP_CI_GUARD=1` (garder les vérifications, sauter le contrôle de CI).
+- **CI sur toutes les branches** : pousser la branche de travail d'abord, c'est là que compilation et
+  tests sont réellement validés.
+
+Ordre de marche, y compris (surtout) en session web :
+
+1. `scripts/verify.sh`
+2. `git push -u origin <branche-de-travail>` → la CI construit et teste la branche
+3. `scripts/ci-status.sh --wait` → attendre le vert
+4. seulement ensuite, merger dans `staging`/`main` et pousser
+
+Ce que `scripts/verify.sh` ne prouve pas : que ça compile et que les tests passent (Gradle
+indisponible en session web). Seule l'étape 3 le prouve — ne jamais annoncer un changement comme
+vérifié avant elle.
+
 ## CI
 
-`.github/workflows/build.yml` s'exécute sur chaque push vers `staging`/`main` : `ktlintCheck` →
-`testStagingDebugUnitTest testProductionDebugUnitTest` → `assembleDebug` (uniquement les variants
-debug, les variants release ne sont ni testés ni construits en CI). Grâce aux flavors Gradle
-`staging`/`production` (voir Architecture),
+`.github/workflows/build.yml` s'exécute sur chaque push vers **n'importe quelle branche** :
+`ktlintCheck` → `testStagingDebugUnitTest testProductionDebugUnitTest` → `assembleDebug` (uniquement
+les variants debug, les variants release ne sont ni testés ni construits en CI). Sur une branche de
+travail, le run s'arrête là : les APK, artifacts et releases ne sont publiés que depuis `staging`/`main`
+(étapes conditionnées par `env.PUBLISH`), et un nouveau push sur une branche de travail annule le run
+précédent (`concurrency`). Grâce aux flavors Gradle `staging`/`production` (voir Architecture),
 un seul run produit et publie **deux** APK debug à chaque fois, quelle que soit la branche qui a
 déclenché le build (le flavor `production` est renommé `main` uniquement dans le nom des
 artifacts/releases CI). Deux façons de les récupérer :
