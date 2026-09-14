@@ -17,6 +17,7 @@ import com.rangele.inventory.data.local.MIGRATION_5_6
 import com.rangele.inventory.data.local.MIGRATION_6_7
 import com.rangele.inventory.data.local.MIGRATION_7_8
 import com.rangele.inventory.data.local.MIGRATION_8_9
+import com.rangele.inventory.data.local.MIGRATION_9_10
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.CategoryRepositoryImpl
 import com.rangele.inventory.data.repository.HistoryRepository
@@ -66,6 +67,7 @@ class AppContainer(
                 MIGRATION_6_7,
                 MIGRATION_7_8,
                 MIGRATION_8_9,
+                MIGRATION_9_10,
             ).build()
 
     val inventoryRepository: InventoryRepository =

@@ -43,6 +43,7 @@ interface InventoryRepository {
         opened: Boolean = false,
         barcode: String? = null,
         pantryId: Long? = null,
+        nutriscore: String? = null,
     ): Long
 
     /**

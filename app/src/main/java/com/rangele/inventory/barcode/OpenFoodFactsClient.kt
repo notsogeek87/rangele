@@ -50,7 +50,7 @@ class OpenFoodFactsClientImpl : OpenFoodFactsClient {
 
     private companion object {
         const val BASE_URL = "https://world.openfoodfacts.org/api/v2/product/"
-        const val FIELDS = "code,product_name,brands,quantity,categories,image_front_url,image_url"
+        const val FIELDS = "code,product_name,brands,quantity,categories,image_front_url,image_url,nutriscore_grade"
 
         // Open Food Facts asks clients to identify themselves with app name, version and a contact/link;
         // a missing or generic User-Agent is treated as abusive traffic and can be throttled or blocked.
@@ -91,6 +91,12 @@ internal fun parseOffResponse(
             imageUrl =
                 product.optString("image_front_url").ifBlank { null }
                     ?: product.optString("image_url").ifBlank { null },
+            nutriscore =
+                product
+                    .optString("nutriscore_grade")
+                    .ifBlank { null }
+                    ?.lowercase()
+                    ?.takeIf { it.length == 1 && it in "abcde" },
         ),
     )
 }

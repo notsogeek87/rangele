@@ -128,9 +128,9 @@ class BarcodeScanViewModelTest {
         }
 
     @Test
-    fun `saving a found product inserts it with its barcode`() =
+    fun `saving a found product inserts it with its barcode and nutriscore`() =
         runTest(mainDispatcherRule.dispatcher) {
-            val offProduct = OffProduct(barcode = "222", name = "Nutella")
+            val offProduct = OffProduct(barcode = "222", name = "Nutella", nutriscore = "e")
             val client = FakeOffProductRepository(mapOf("222" to OffLookupResult.Found(offProduct)))
             val repository = FakeInventoryRepository()
             val viewModel = BarcodeScanViewModel(repository, FakeCategoryRepository(), FakePantryRepository(), client)
@@ -144,6 +144,7 @@ class BarcodeScanViewModelTest {
             assertEquals("Nutella", saved.name)
             assertEquals(3.0, saved.quantity, 0.0)
             assertEquals("222", saved.barcode)
+            assertEquals("e", saved.nutriscore)
         }
 
     @Test

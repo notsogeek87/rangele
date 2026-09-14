@@ -6,6 +6,7 @@ import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.local.dao.OffProductCacheDao
 import com.rangele.inventory.data.local.entity.OffProductCacheEntity
 import com.rangele.inventory.testutil.FakeOpenFoodFactsClient
+import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -74,6 +75,7 @@ class OffProductRepositoryImplTest {
             val cached = cacheDao.getByBarcode(BARCODE)
             assertTrue(cached != null && cached.found)
             assertEquals("Nutella", cached?.name)
+            assertEquals("b", cached?.nutriscore)
             assertEquals(currentTime, cached?.fetchedAt)
         }
 
@@ -216,7 +218,8 @@ class OffProductRepositoryImplTest {
             assertEquals("Nutella (nouveau)", cacheDao.getByBarcode(BARCODE)?.name)
         }
 
-    private fun offProduct(name: String = "Nutella") = OffProduct(barcode = BARCODE, name = name, brand = "Ferrero")
+    private fun offProduct(name: String = "Nutella") =
+        OffProduct(barcode = BARCODE, name = name, brand = "Ferrero", nutriscore = "b")
 
     private fun cachedEntry(
         found: Boolean,
@@ -230,6 +233,7 @@ class OffProductRepositoryImplTest {
         packageFormat = null,
         category = null,
         imageUrl = null,
+        nutriscore = if (found) "b" else null,
         fetchedAt = fetchedAt,
     )
 

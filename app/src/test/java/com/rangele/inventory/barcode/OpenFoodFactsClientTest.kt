@@ -23,7 +23,8 @@ class OpenFoodFactsClientTest {
                 "quantity": "400 g",
                 "categories": "en:Spreads, en:Sweet spreads, en:Hazelnut spreads",
                 "image_front_url": "https://images.openfoodfacts.org/front.jpg",
-                "image_url": "https://images.openfoodfacts.org/full.jpg"
+                "image_url": "https://images.openfoodfacts.org/full.jpg",
+                "nutriscore_grade": "e"
               }
             }
             """.trimIndent()
@@ -38,6 +39,25 @@ class OpenFoodFactsClientTest {
         assertEquals("400 g", product.packageFormat)
         assertEquals("en:Hazelnut spreads", product.category)
         assertEquals("https://images.openfoodfacts.org/front.jpg", product.imageUrl)
+        assertEquals("e", product.nutriscore)
+    }
+
+    @Test
+    fun `an unknown or not-applicable nutriscore grade is dropped`() {
+        val body =
+            """
+            {
+              "status": 1,
+              "product": {
+                "product_name": "Sel de table",
+                "nutriscore_grade": "not-applicable"
+              }
+            }
+            """.trimIndent()
+
+        val result = parseOffResponse("123", body) as OffLookupResult.Found
+
+        assertEquals(null, result.product.nutriscore)
     }
 
     @Test

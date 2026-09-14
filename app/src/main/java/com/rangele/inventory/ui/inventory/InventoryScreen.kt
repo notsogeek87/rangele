@@ -65,6 +65,7 @@ import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.repository.ItemDetails
 import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.LowStockThresholdField
+import com.rangele.inventory.ui.components.NutriscoreBadge
 import com.rangele.inventory.ui.components.OpenedCheckbox
 import com.rangele.inventory.ui.theme.WarningOrange
 import com.rangele.inventory.util.ExpirationStatus
@@ -403,10 +404,15 @@ private fun ProductRow(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        text = product.name,
+                        style = MaterialTheme.typography.bodyLarge,
+                    )
+                    product.nutriscore?.let { grade ->
+                        NutriscoreBadge(grade = grade, modifier = Modifier.padding(start = 6.dp))
+                    }
+                }
                 product.expirationDate?.let { expirationDate ->
                     val status = ExpirationStatus.of(expirationDate.toLocalDate())
                     Text(

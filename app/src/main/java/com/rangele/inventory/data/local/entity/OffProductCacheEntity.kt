@@ -23,6 +23,8 @@ data class OffProductCacheEntity(
     val category: String?,
     @ColumnInfo(name = "image_url")
     val imageUrl: String?,
+    /** Grade Nutri-Score ("a" à "e"), voir [com.rangele.inventory.barcode.OffProduct.nutriscore]. */
+    val nutriscore: String?,
     /** Epoch millis de la dernière réponse (succès ou "non trouvé") d'Open Food Facts pour ce code-barres. */
     @ColumnInfo(name = "fetched_at")
     val fetchedAt: Long,
