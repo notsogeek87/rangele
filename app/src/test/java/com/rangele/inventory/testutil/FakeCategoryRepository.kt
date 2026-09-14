@@ -14,10 +14,14 @@ class FakeCategoryRepository(
 
     override fun observeCategories(): Flow<List<CategoryEntity>> = categories
 
-    override suspend fun createCategory(name: String): Long {
-        val id = nextId++
-        categories.value = categories.value + CategoryEntity(id = id, name = name.trim())
-        return id
+    fun getAllOnce(): List<CategoryEntity> = categories.value
+
+    override suspend fun ensureCategory(name: String): CategoryEntity {
+        val trimmed = name.trim()
+        categories.value.firstOrNull { it.name.equals(trimmed, ignoreCase = true) }?.let { return it }
+        val category = CategoryEntity(id = nextId++, name = trimmed)
+        categories.value = categories.value + category
+        return category
     }
 
     override suspend fun renameCategory(

@@ -11,7 +11,6 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
@@ -19,7 +18,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -47,7 +45,6 @@ fun CategoriesScreen(
     onBackClick: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    var showCreateDialog by remember { mutableStateOf(false) }
     var categoryPendingRename by remember { mutableStateOf<CategoryEntity?>(null) }
     var categoryPendingDelete by remember { mutableStateOf<CategoryEntity?>(null) }
 
@@ -67,18 +64,17 @@ fun CategoriesScreen(
                     ),
             )
         },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showCreateDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Créer une catégorie")
-            }
-        },
     ) { paddingValues ->
         if (uiState.categories.isEmpty()) {
             Column(
                 modifier = Modifier.fillMaxSize().padding(paddingValues).padding(32.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
-                Text("Aucune catégorie pour le moment.", style = MaterialTheme.typography.bodyLarge)
+                Text(
+                    "Aucune catégorie pour le moment. Elles sont créées automatiquement lors du scan " +
+                        "d'un code-barres, à partir des informations Open Food Facts.",
+                    style = MaterialTheme.typography.bodyLarge,
+                )
             }
         } else {
             LazyColumn(
@@ -116,18 +112,6 @@ fun CategoriesScreen(
                 }
             }
         }
-    }
-
-    if (showCreateDialog) {
-        CategoryNameDialog(
-            title = "Nouvelle catégorie",
-            initialName = "",
-            onDismiss = { showCreateDialog = false },
-            onConfirm = { name ->
-                viewModel.onCreateCategory(name)
-                showCreateDialog = false
-            },
-        )
     }
 
     categoryPendingRename?.let { category ->
