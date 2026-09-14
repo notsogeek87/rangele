@@ -20,9 +20,12 @@ Fonctionnalités V3 (au-dessus du MVP) :
 - **Dates de péremption** : champ optionnel sur le produit, saisi à l'ajout manuel ou au scan ;
   code couleur dans la liste (orange < 7 jours, rouge si dépassé) ; tri par date de péremption ;
   notification locale quotidienne (WorkManager) avec délai et heure réglables dans Paramètres.
-- **Catégories** : champ optionnel sur le produit, gérées (créer/renommer/supprimer) dans un écran
-  dédié ; filtre par catégorie dans l'inventaire. Supprimer une catégorie détache simplement les
-  produits qui l'utilisaient (ils redeviennent sans catégorie).
+- **Catégories** : champ optionnel sur le produit, sans création manuelle — chaque catégorie est
+  créée automatiquement (si elle n'existe pas déjà) à partir de la catégorie Open Food Facts du
+  produit scanné par code-barres, et directement sélectionnée sur la fiche produit. L'écran dédié
+  permet seulement de renommer/supprimer une catégorie existante ; filtre par catégorie dans
+  l'inventaire. Supprimer une catégorie détache simplement les produits qui l'utilisaient (ils
+  redeviennent sans catégorie).
 - **Historique** : chaque retrait/suppression (pas les ajouts) journalisé et consultable dans un
   écran dédié, ordre chronologique inverse.
 - **Liste de courses suggérée** : écran listant les produits dont la quantité est **inférieure ou
