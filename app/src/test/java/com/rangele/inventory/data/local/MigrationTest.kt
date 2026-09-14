@@ -55,6 +55,7 @@ class MigrationTest {
                         MIGRATION_5_6,
                         MIGRATION_6_7,
                         MIGRATION_7_8,
+                        MIGRATION_8_9,
                     ).allowMainThreadQueries()
                     .build()
 
@@ -82,6 +83,7 @@ class MigrationTest {
 
                 assertTrue(database.historyEntryDao().getAllOnce().isEmpty())
                 assertTrue(database.pantryDao().getAllOnce().isEmpty())
+                assertNull(database.offProductCacheDao().getByBarcode("0000000000000"))
             } finally {
                 database.close()
             }
@@ -103,6 +105,7 @@ class MigrationTest {
                         MIGRATION_5_6,
                         MIGRATION_6_7,
                         MIGRATION_7_8,
+                        MIGRATION_8_9,
                     ).allowMainThreadQueries()
                     .build()
 
@@ -126,7 +129,7 @@ class MigrationTest {
             val database =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, databaseName)
-                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8)
+                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9)
                     .allowMainThreadQueries()
                     .build()
 
