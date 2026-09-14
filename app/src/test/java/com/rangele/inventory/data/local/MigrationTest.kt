@@ -57,6 +57,7 @@ class MigrationTest {
                         MIGRATION_7_8,
                         MIGRATION_8_9,
                         MIGRATION_9_10,
+                        MIGRATION_10_11,
                     ).allowMainThreadQueries()
                     .build()
 
@@ -76,6 +77,8 @@ class MigrationTest {
                 assertNull(product.barcode)
                 assertNull(product.pantryId)
                 assertNull(product.nutriscore)
+                // Pas de date d'ajout avant la v11 : la date de modification en tient lieu.
+                assertEquals(1000L, product.createdAt)
 
                 // Unité discrète sans date ni statut "entamé" : deux articles sont créés sans rien à reporter.
                 val items = database.productItemDao().getForProduct(product.id)
@@ -109,6 +112,7 @@ class MigrationTest {
                         MIGRATION_7_8,
                         MIGRATION_8_9,
                         MIGRATION_9_10,
+                        MIGRATION_10_11,
                     ).allowMainThreadQueries()
                     .build()
 
@@ -132,7 +136,7 @@ class MigrationTest {
             val database =
                 Room
                     .databaseBuilder(context, AppDatabase::class.java, databaseName)
-                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10)
+                    .addMigrations(MIGRATION_6_7, MIGRATION_7_8, MIGRATION_8_9, MIGRATION_9_10, MIGRATION_10_11)
                     .allowMainThreadQueries()
                     .build()
 

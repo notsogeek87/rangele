@@ -31,20 +31,28 @@ class FakeInventoryRepository(
         query: String,
         category: String?,
         sortByExpiration: Boolean,
+        sortByRecent: Boolean,
     ): Flow<List<ProductEntity>> =
         products.map { list ->
             val filtered =
                 list
                     .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
                     .filter { category == null || it.category == category }
-            if (sortByExpiration) {
-                filtered.sortedWith(
-                    compareBy<ProductEntity> { it.expirationDate == null }
-                        .thenBy { it.expirationDate }
-                        .thenBy { it.name.lowercase() },
-                )
-            } else {
-                filtered.sortedBy { it.name.lowercase() }
+            when {
+                sortByRecent ->
+                    filtered.sortedWith(
+                        compareByDescending<ProductEntity> { it.createdAt }
+                            .thenBy { it.name.lowercase() },
+                    )
+
+                sortByExpiration ->
+                    filtered.sortedWith(
+                        compareBy<ProductEntity> { it.expirationDate == null }
+                            .thenBy { it.expirationDate }
+                            .thenBy { it.name.lowercase() },
+                    )
+
+                else -> filtered.sortedBy { it.name.lowercase() }
             }
         }
 

@@ -24,7 +24,7 @@ import com.rangele.inventory.data.local.entity.ProductItemEntity
         ProductItemEntity::class,
         OffProductCacheEntity::class,
     ],
-    version = 10,
+    version = 11,
     exportSchema = true,
 )
 abstract class AppDatabase : RoomDatabase() {

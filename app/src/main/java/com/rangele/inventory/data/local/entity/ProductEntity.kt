@@ -15,6 +15,17 @@ data class ProductEntity(
     val unit: String,
     @ColumnInfo(name = "updated_at")
     val updatedAt: Long = System.currentTimeMillis(),
+    /**
+     * Date d'ajout du produit à l'inventaire (epoch millis), figée à la création — là où
+     * [updatedAt] est repoussé par chaque ajustement de quantité. C'est elle qui porte le tri
+     * « ajout récent », tri par défaut de l'inventaire : un produit réapprovisionné ne doit pas
+     * remonter en tête de liste comme s'il venait d'entrer dans le placard.
+     *
+     * Défaut SQL déclaré pour que la colonne ajoutée par migration corresponde à celle que Room
+     * crée à l'installation (même raison que [opened]).
+     */
+    @ColumnInfo(name = "created_at", defaultValue = "0")
+    val createdAt: Long = System.currentTimeMillis(),
     /** Epoch millis (UTC midnight of the expiration day), null when not tracked. */
     @ColumnInfo(name = "expiration_date")
     val expirationDate: Long? = null,
