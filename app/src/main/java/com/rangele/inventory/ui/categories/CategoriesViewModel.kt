@@ -23,11 +23,6 @@ class CategoriesViewModel(
             .map { CategoriesUiState(it) }
             .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), CategoriesUiState())
 
-    fun onCreateCategory(name: String) {
-        if (name.isBlank()) return
-        viewModelScope.launch { repository.createCategory(name) }
-    }
-
     fun onRenameCategory(
         category: CategoryEntity,
         newName: String,

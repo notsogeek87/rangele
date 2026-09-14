@@ -6,7 +6,12 @@ import kotlinx.coroutines.flow.Flow
 interface CategoryRepository {
     fun observeCategories(): Flow<List<CategoryEntity>>
 
-    suspend fun createCategory(name: String): Long
+    /**
+     * Renvoie la catégorie [name] si elle existe déjà (comparaison insensible à la casse), sinon la crée.
+     * Il n'y a plus de création manuelle dans l'app : les catégories proviennent uniquement d'Open Food
+     * Facts au moment du scan d'un code-barres (voir BarcodeScanViewModel).
+     */
+    suspend fun ensureCategory(name: String): CategoryEntity
 
     suspend fun renameCategory(
         category: CategoryEntity,

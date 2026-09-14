@@ -11,7 +11,12 @@ class CategoryRepositoryImpl(
 ) : CategoryRepository {
     override fun observeCategories(): Flow<List<CategoryEntity>> = categoryDao.observeAll()
 
-    override suspend fun createCategory(name: String): Long = categoryDao.insert(CategoryEntity(name = name.trim()))
+    override suspend fun ensureCategory(name: String): CategoryEntity {
+        val trimmed = name.trim()
+        categoryDao.getByName(trimmed)?.let { return it }
+        val id = categoryDao.insert(CategoryEntity(name = trimmed))
+        return CategoryEntity(id = id, name = trimmed)
+    }
 
     override suspend fun renameCategory(
         category: CategoryEntity,

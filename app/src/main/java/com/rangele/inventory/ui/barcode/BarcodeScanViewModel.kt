@@ -105,12 +105,14 @@ class BarcodeScanViewModel(
             }
             when (val result = offProductRepository.lookupProduct(barcode)) {
                 is OffLookupResult.Found -> {
-                    val state = _uiState.value
+                    // La catégorie vient directement d'Open Food Facts : on la crée si besoin (il n'y a
+                    // plus de création manuelle de catégorie dans l'app) et on la sélectionne aussitôt.
+                    val category = result.product.category?.let { categoryRepository.ensureCategory(it) }
                     _uiState.update {
                         it.copy(
                             lookup = BarcodeLookupState.Found(result.product),
                             name = result.product.name,
-                            category = result.product.category?.takeIf { c -> c in state.availableCategories },
+                            category = category?.name,
                             nutriscore = result.product.nutriscore,
                         )
                     }

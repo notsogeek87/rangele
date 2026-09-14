@@ -104,6 +104,27 @@ class BarcodeScanViewModelTest {
         }
 
     @Test
+    fun `a category found on Open Food Facts is created and selected directly, without a preexisting category`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val offProduct =
+                OffProduct(barcode = "222", name = "Nutella", category = "Pâtes à tartiner")
+            val client = FakeOffProductRepository(mapOf("222" to OffLookupResult.Found(offProduct)))
+            val categoryRepository = FakeCategoryRepository()
+            val viewModel =
+                BarcodeScanViewModel(
+                    FakeInventoryRepository(),
+                    categoryRepository,
+                    FakePantryRepository(),
+                    client,
+                )
+
+            viewModel.onBarcodeDetected("222")
+
+            assertEquals("Pâtes à tartiner", viewModel.uiState.value.category)
+            assertTrue(categoryRepository.getAllOnce().any { it.name == "Pâtes à tartiner" })
+        }
+
+    @Test
     fun `forcing a refresh bypasses the cache and updates the found product`() =
         runTest(mainDispatcherRule.dispatcher) {
             val offProduct = OffProduct(barcode = "222", name = "Nutella")
