@@ -6,7 +6,8 @@ import com.rangele.inventory.data.local.AppDatabase
 import com.rangele.inventory.data.local.dao.OffProductCacheDao
 import com.rangele.inventory.data.local.entity.OffProductCacheEntity
 import com.rangele.inventory.testutil.FakeOpenFoodFactsClient
-import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import org.junit.After
 import org.junit.Assert.assertEquals
@@ -19,6 +20,7 @@ import org.robolectric.RobolectricTestRunner
 import java.util.concurrent.Executor
 
 /** Uses a real in-memory Room database (via Robolectric) so the cache's SQL — not a fake — is under test. */
+@OptIn(ExperimentalCoroutinesApi::class)
 @RunWith(RobolectricTestRunner::class)
 class OffProductRepositoryImplTest {
     private lateinit var database: AppDatabase
@@ -126,7 +128,10 @@ class OffProductRepositoryImplTest {
             assertEquals("Nutella (ancien)", (result as OffLookupResult.Found).product.name)
             assertEquals(0, client.requestCount)
 
-            advanceUntilIdle()
+            // runCurrent() et pas advanceUntilIdle() : ce dernier s'arrête dès qu'il ne reste plus de
+            // tâche de premier plan et laisse donc dormir ce qui a été lancé dans `backgroundScope` —
+            // l'actualisation ne partait jamais et le test échouait sur `requestCount`.
+            runCurrent()
 
             assertEquals(1, client.requestCount)
             assertEquals("Nutella (nouveau)", cacheDao.getByBarcode(BARCODE)?.name)
@@ -197,7 +202,7 @@ class OffProductRepositoryImplTest {
             val repository = OffProductRepositoryImpl(failingClient, cacheDao, backgroundScope, now = { currentTime })
 
             val result = repository.lookupProduct(BARCODE)
-            advanceUntilIdle()
+            runCurrent() // Voir plus haut : advanceUntilIdle() n'exécute pas le travail du backgroundScope.
 
             assertTrue(result is OffLookupResult.Found)
             val cached = cacheDao.getByBarcode(BARCODE)
