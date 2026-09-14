@@ -16,6 +16,7 @@ import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.robolectric.RobolectricTestRunner
+import java.util.concurrent.Executor
 
 /** Uses a real in-memory Room database (via Robolectric) so the cache's SQL — not a fake — is under test. */
 @RunWith(RobolectricTestRunner::class)
@@ -29,6 +30,11 @@ class OffProductRepositoryImplTest {
         database =
             Room
                 .inMemoryDatabaseBuilder(ApplicationProvider.getApplicationContext(), AppDatabase::class.java)
+                // Exécuteurs synchrones : les écritures du cache déclenchées depuis backgroundScope.launch
+                // (voir OffProductRepositoryImpl) doivent se terminer avant qu'advanceUntilIdle() ne rende la
+                // main, ce qu'un exécuteur Room réel (sur un autre thread) ne garantit pas.
+                .setQueryExecutor(Executor(Runnable::run))
+                .setTransactionExecutor(Executor(Runnable::run))
                 .allowMainThreadQueries()
                 .build()
         cacheDao = database.offProductCacheDao()

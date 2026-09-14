@@ -3,7 +3,11 @@ package com.rangele.inventory.testutil
 import com.rangele.inventory.barcode.OffLookupResult
 import com.rangele.inventory.barcode.OpenFoodFactsClient
 
-/** In-memory stand-in for [OpenFoodFactsClient], used to unit test ViewModels/repositories without real network calls. */
+/**
+ * In-memory stand-in for [OpenFoodFactsClient], used to unit test ViewModels/repositories without real network calls.
+ * A barcode absent from [resultsByBarcode] simulates the network being unreachable ([OffLookupResult.NetworkError]) —
+ * use an explicit [OffLookupResult.NotFound] entry to simulate a barcode genuinely unknown to Open Food Facts.
+ */
 class FakeOpenFoodFactsClient(
     private val resultsByBarcode: Map<String, OffLookupResult> = emptyMap(),
 ) : OpenFoodFactsClient {
@@ -17,6 +21,6 @@ class FakeOpenFoodFactsClient(
     override suspend fun lookupProduct(barcode: String): OffLookupResult {
         lastRequestedBarcode = barcode
         requestCount++
-        return resultsByBarcode[barcode] ?: OffLookupResult.NotFound(barcode)
+        return resultsByBarcode[barcode] ?: OffLookupResult.NetworkError
     }
 }
