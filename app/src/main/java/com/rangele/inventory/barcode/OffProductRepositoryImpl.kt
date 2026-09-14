@@ -79,6 +79,7 @@ private fun OffProductCacheEntity.toOffProduct(requestedBarcode: String) =
         packageFormat = packageFormat,
         category = category,
         imageUrl = imageUrl,
+        nutriscore = nutriscore,
     )
 
 private fun OffProduct.toCacheEntity(
@@ -92,6 +93,7 @@ private fun OffProduct.toCacheEntity(
     packageFormat = packageFormat,
     category = category,
     imageUrl = imageUrl,
+    nutriscore = nutriscore,
     fetchedAt = fetchedAt,
 )
 
@@ -106,5 +108,6 @@ private fun negativeCacheEntity(
     packageFormat = null,
     category = null,
     imageUrl = null,
+    nutriscore = null,
     fetchedAt = fetchedAt,
 )

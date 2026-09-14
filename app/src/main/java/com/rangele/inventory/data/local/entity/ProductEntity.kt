@@ -47,6 +47,8 @@ data class ProductEntity(
     /** Placard du produit (voir [com.rangele.inventory.data.local.entity.PantryEntity]), null si non assigné. */
     @ColumnInfo(name = "pantry_id")
     val pantryId: Long? = null,
+    /** Grade Nutri-Score ("a" à "e"), renseigné depuis Open Food Facts lors d'un scan de code-barres. */
+    val nutriscore: String? = null,
 ) {
     val quantityUnit: QuantityUnit
         get() = QuantityUnit.fromStorageValue(unit)

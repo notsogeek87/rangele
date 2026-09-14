@@ -49,6 +49,7 @@ class InventoryRepositoryImpl(
         opened: Boolean,
         barcode: String?,
         pantryId: Long?,
+        nutriscore: String?,
     ): Long {
         val id =
             productDao.insert(
@@ -62,6 +63,7 @@ class InventoryRepositoryImpl(
                     opened = opened,
                     barcode = barcode,
                     pantryId = pantryId,
+                    nutriscore = nutriscore,
                 ),
             )
         if (unit.tracksItems) {

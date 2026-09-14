@@ -3,6 +3,7 @@ package com.rangele.inventory.ui.barcode
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -39,6 +40,7 @@ import com.rangele.inventory.barcode.OffProduct
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.ui.components.CategoryDropdown
 import com.rangele.inventory.ui.components.ExpirationDateField
+import com.rangele.inventory.ui.components.NutriscoreBadge
 import com.rangele.inventory.ui.components.PantryDropdown
 import com.rangele.inventory.ui.components.UnitDropdown
 import com.rangele.inventory.ui.theme.ShapeSmall
@@ -217,6 +219,19 @@ private fun ProductForm(
                             style = MaterialTheme.typography.labelMedium,
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                         )
+                    }
+                    if (offProduct.nutriscore != null) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp),
+                        ) {
+                            Text(
+                                "Nutri-Score : ",
+                                style = MaterialTheme.typography.labelMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            )
+                            NutriscoreBadge(grade = offProduct.nutriscore)
+                        }
                     }
                 }
             }

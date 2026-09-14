@@ -156,3 +156,16 @@ val MIGRATION_8_9 =
             )
         }
     }
+
+/**
+ * Ajoute le Nutri-Score ("a" à "e") sur le produit et sur le cache Open Food Facts (voir
+ * [com.rangele.inventory.data.local.entity.OffProductCacheEntity]), affiché dans la liste
+ * principale et la liste de courses suggérée.
+ */
+val MIGRATION_9_10 =
+    object : Migration(9, 10) {
+        override fun migrate(db: SupportSQLiteDatabase) {
+            db.execSQL("ALTER TABLE products ADD COLUMN nutriscore TEXT")
+            db.execSQL("ALTER TABLE off_product_cache ADD COLUMN nutriscore TEXT")
+        }
+    }

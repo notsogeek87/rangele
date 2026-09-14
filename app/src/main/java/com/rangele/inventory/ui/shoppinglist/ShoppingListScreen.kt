@@ -34,6 +34,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.data.local.entity.ProductEntity
+import com.rangele.inventory.ui.components.NutriscoreBadge
 import com.rangele.inventory.ui.theme.ShapeSmall
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -125,7 +126,12 @@ private fun ShoppingListRow(
         ) {
             Checkbox(checked = checked, onCheckedChange = { onToggle() })
             Column(modifier = Modifier.weight(1f)) {
-                Text(product.name, style = MaterialTheme.typography.bodyLarge)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(product.name, style = MaterialTheme.typography.bodyLarge)
+                    product.nutriscore?.let { grade ->
+                        NutriscoreBadge(grade = grade, modifier = Modifier.padding(start = 6.dp))
+                    }
+                }
                 val reason =
                     if (product.inShoppingList) {
                         "ajouté manuellement"

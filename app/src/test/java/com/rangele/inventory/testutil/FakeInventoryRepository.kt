@@ -77,6 +77,7 @@ class FakeInventoryRepository(
         opened: Boolean,
         barcode: String?,
         pantryId: Long?,
+        nutriscore: String?,
     ): Long {
         val id = nextId++
         products.value = products.value +
@@ -91,6 +92,7 @@ class FakeInventoryRepository(
                 opened = opened,
                 barcode = barcode,
                 pantryId = pantryId,
+                nutriscore = nutriscore,
             )
         if (unit.tracksItems) {
             val item = ItemDetails(expirationDate, opened)

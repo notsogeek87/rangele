@@ -50,6 +50,7 @@ data class BarcodeUiState(
     val unit: QuantityUnit = QuantityUnit.PIECE,
     val expirationDate: LocalDate? = null,
     val category: String? = null,
+    val nutriscore: String? = null,
     val availableCategories: List<String> = emptyList(),
     val pantryId: Long? = null,
     val availablePantries: List<PantryEntity> = emptyList(),
@@ -110,11 +111,14 @@ class BarcodeScanViewModel(
                             lookup = BarcodeLookupState.Found(result.product),
                             name = result.product.name,
                             category = result.product.category?.takeIf { c -> c in state.availableCategories },
+                            nutriscore = result.product.nutriscore,
                         )
                     }
                 }
                 is OffLookupResult.NotFound ->
-                    _uiState.update { it.copy(lookup = BarcodeLookupState.NotFound(barcode), name = "") }
+                    _uiState.update {
+                        it.copy(lookup = BarcodeLookupState.NotFound(barcode), name = "", nutriscore = null)
+                    }
                 OffLookupResult.NetworkError ->
                     _uiState.update { it.copy(lookup = BarcodeLookupState.Error(barcode)) }
             }
@@ -161,6 +165,7 @@ class BarcodeScanViewModel(
                 category = state.category,
                 barcode = barcode,
                 pantryId = state.pantryId,
+                nutriscore = state.nutriscore,
             )
             _uiState.update { it.copy(isSaved = true) }
         }

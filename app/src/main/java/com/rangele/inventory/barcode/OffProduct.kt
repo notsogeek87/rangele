@@ -9,6 +9,8 @@ data class OffProduct(
     val packageFormat: String? = null,
     val category: String? = null,
     val imageUrl: String? = null,
+    /** Grade Nutri-Score ("a" à "e" en minuscule), null si non renseigné sur Open Food Facts. */
+    val nutriscore: String? = null,
 )
 
 /** Résultat d'une recherche de produit par code-barres sur Open Food Facts. */
