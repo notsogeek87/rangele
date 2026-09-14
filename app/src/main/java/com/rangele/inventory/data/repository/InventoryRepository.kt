@@ -13,10 +13,12 @@ import kotlinx.coroutines.flow.Flow
 const val DEFAULT_LOW_STOCK_THRESHOLD: Double = 1.0
 
 interface InventoryRepository {
+    /** [sortByExpiration] et [sortByRecent] s'excluent ; à défaut le tri se fait par nom. */
     fun observeProducts(
         query: String = "",
         category: String? = null,
         sortByExpiration: Boolean = false,
+        sortByRecent: Boolean = false,
     ): Flow<List<ProductEntity>>
 
     /** Products whose quantity has dropped below their own [ProductEntity.lowStockThreshold]. */

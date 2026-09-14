@@ -81,6 +81,7 @@ private fun ProductEntity.toJson(): JSONObject =
         put("quantity", quantity)
         put("unit", unit)
         put("updatedAt", updatedAt)
+        put("createdAt", createdAt)
         put("expirationDate", expirationDate ?: JSONObject.NULL)
         put("category", category ?: JSONObject.NULL)
         put("lowStockThreshold", lowStockThreshold ?: JSONObject.NULL)
@@ -97,6 +98,9 @@ private fun JSONObject.toProductEntity(): ProductEntity =
         quantity = getDouble("quantity"),
         unit = getString("unit"),
         updatedAt = getLong("updatedAt"),
+        // Absent des sauvegardes antérieures à ce champ : la date de modification en tient lieu,
+        // comme pour les produits repris par la migration 10 → 11.
+        createdAt = if (has("createdAt")) getLong("createdAt") else getLong("updatedAt"),
         expirationDate = if (isNull("expirationDate")) null else getLong("expirationDate"),
         category = if (isNull("category")) null else getString("category"),
         lowStockThreshold = if (isNull("lowStockThreshold")) null else getDouble("lowStockThreshold"),

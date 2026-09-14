@@ -21,7 +21,8 @@ class InventoryRepositoryImpl(
         query: String,
         category: String?,
         sortByExpiration: Boolean,
-    ): Flow<List<ProductEntity>> = productDao.observeProducts(query.trim(), category, sortByExpiration)
+        sortByRecent: Boolean,
+    ): Flow<List<ProductEntity>> = productDao.observeProducts(query.trim(), category, sortByExpiration, sortByRecent)
 
     override fun observeLowStockProducts(): Flow<List<ProductEntity>> = productDao.observeLowStock()
 
