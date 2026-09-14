@@ -91,6 +91,19 @@ android {
     }
 }
 
+// Sans ça, un test rouge en CI se résume à « AssertionError at XxxTest.kt:105 » : ni la valeur
+// attendue, ni la valeur obtenue, ni la pile. Comme la CI est le seul endroit où les tests tournent
+// (Gradle est inutilisable en session Claude Code sur le web, voir CLAUDE.md), son log doit suffire
+// à diagnostiquer, sans avoir à télécharger le rapport HTML.
+tasks.withType<Test>().configureEach {
+    testLogging {
+        events("failed")
+        exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+        showStackTraces = true
+        showCauses = true
+    }
+}
+
 ktlint {
     version.set("1.3.1")
     android.set(true)
