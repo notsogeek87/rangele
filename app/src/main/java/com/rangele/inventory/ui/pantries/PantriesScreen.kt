@@ -1,6 +1,5 @@
 package com.rangele.inventory.ui.pantries
 
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -101,7 +100,7 @@ fun PantriesScreen(
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            border = BorderStroke(1.dp, MaterialTheme.colorScheme.outlineVariant),
+                            elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                         ) {
                             Row(
                                 modifier = Modifier.fillMaxWidth().padding(horizontal = 4.dp),
