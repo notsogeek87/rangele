@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rangele.inventory.backup.BackupRepository
 import com.rangele.inventory.data.settings.SettingsRepository
+import com.rangele.inventory.data.settings.ThemeMode
 import com.rangele.inventory.work.ExpirationCheckScheduler
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -24,6 +25,7 @@ data class SettingsUiState(
     val lastBackupAt: Long? = null,
     val backupInProgress: Boolean = false,
     val backupMessage: String? = null,
+    val themeMode: ThemeMode = ThemeMode.SYSTEM,
 )
 
 private data class BackupOpState(
@@ -43,7 +45,8 @@ class SettingsViewModel(
             settingsRepository.settings,
             settingsRepository.lastBackupTimestamp,
             backupState,
-        ) { settings, lastBackupAt, backupOp ->
+            settingsRepository.themeMode,
+        ) { settings, lastBackupAt, backupOp, themeMode ->
             SettingsUiState(
                 notificationsEnabled = settings.enabled,
                 delayDays = settings.delayDays,
@@ -52,6 +55,7 @@ class SettingsViewModel(
                 lastBackupAt = lastBackupAt,
                 backupInProgress = backupOp.inProgress,
                 backupMessage = backupOp.message,
+                themeMode = themeMode,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -126,5 +130,11 @@ class SettingsViewModel(
 
     fun onBackupMessageShown() {
         backupState.update { it.copy(message = null) }
+    }
+
+    fun onThemeModeChanged(mode: ThemeMode) {
+        viewModelScope.launch {
+            settingsRepository.setThemeMode(mode)
+        }
     }
 }
