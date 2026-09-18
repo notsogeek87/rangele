@@ -9,7 +9,7 @@ Tout est local sur l'appareil, sans backend.
 ## Identité visuelle
 
 Le logo évoque le rangement de placard : un cintre au-dessus d'une armoire à deux portes,
-dans les couleurs du design system Kawaii Pastel Pop de l'app (violet doux, rose pastel,
+dans les couleurs du design system Pastel Modern de l'app (violet doux, rose pastel,
 crème, bleu bébé, menthe — voir `app/src/main/java/com/rangele/inventory/ui/theme/Color.kt`).
 Le mark est appliqué à l'icône de lancement (adaptive icon) et à l'écran d'accueil pour une
 identité cohérente dans toute l'app.
