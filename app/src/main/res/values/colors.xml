@@ -1,4 +1,6 @@
 <resources>
     <color name="ic_launcher_background">#FDF6E7</color>
-    <color name="window_background">#FFD1DC</color>
+    <!-- Doit suivre `background` du thème Compose (CanvasLight), sinon un flash rose apparaît
+         entre l'affichage de la fenêtre et la première frame Compose. -->
+    <color name="window_background">#FFF7F9</color>
 </resources>

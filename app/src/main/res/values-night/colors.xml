@@ -1,0 +1,4 @@
+<resources>
+    <!-- Pendant sombre de window_background : doit suivre `background` du thème Compose (CanvasDark). -->
+    <color name="window_background">#141018</color>
+</resources>
