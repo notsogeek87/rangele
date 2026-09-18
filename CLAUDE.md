@@ -47,8 +47,8 @@ Fonctionnalités V3 (au-dessus du MVP) :
 
 Le MVP et la V3 sont implémentés (`app/src/main/java/com/rangele/inventory`) : Room, repository,
 écrans Compose (inventaire, ajout, scan/vérification de ticket, catégories, placards, historique,
-liste de courses, paramètres), WorkManager (`work/`), DataStore (`data/settings/`) et thème Kawaii
-Pastel Pop.
+liste de courses, paramètres), WorkManager (`work/`), DataStore (`data/settings/`) et design system
+Pastel Modern.
 
 ## Commands
 
@@ -195,6 +195,30 @@ Points de configuration Gradle notables :
   `android:required="false"` sur la feature caméra.
 - Un `FileProvider` est déclaré dans le manifest (`file_paths.xml`) pour partager les fichiers
   images (ex. photo du ticket) entre l'app et la caméra système.
+
+## Design system
+
+Le thème vit dans `ui/theme/` et est la seule source de vérité visuelle — un écran ne code pas de
+couleur, d'arrondi ni d'espacement en dur.
+
+- `Color.kt` — palette « Pastel Modern ». Mêmes familles de teintes que le « Kawaii Pastel Pop »
+  d'origine (rose, violet, bleu ciel, crème, menthe), mais réparties autrement : le canevas est un
+  neutre très clair à sous-ton rosé, les pastels servent de **conteneurs** (badges, chips,
+  pastilles) et chaque teinte a une version foncée pour le texte et les éléments interactifs, afin
+  de tenir le contraste WCAG AA.
+- `Theme.kt` — schémas clair **et sombre** (l'app suit le thème système ; elle était auparavant
+  claire uniquement). Les couleurs hors palette Material (l'ambre des péremptions) passent par
+  `RangeleTheme.accents`, qui bascule avec le reste du thème — ne pas réintroduire de constante
+  globale pour ça.
+- `Shape.kt` — arrondis 10/14/20/26/32dp, croissants avec la taille de l'élément, plus `ShapePill`
+  pour les chips, steppers et boutons flottants.
+- `Type.kt` — les 15 rôles Material sont déclarés en Varela Round. Ne pas en retirer : un rôle
+  absent retombe silencieusement sur Roboto (c'est ce qui affichait les dates de péremption dans une
+  autre police que les noms de produits).
+- `Spacing.kt` — grille de 4dp (`Spacing.xs` … `Spacing.xxxl`) et tailles récurrentes (`Sizes`).
+
+Les composants partagés correspondants sont dans `ui/components/` : `ProductAvatar`, `StatusPill`,
+`QuantityStepper` (`ProductVisuals.kt`), `SearchField` et `EmptyState`.
 
 ## Style
 
