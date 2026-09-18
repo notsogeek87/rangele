@@ -68,6 +68,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.R
 import com.rangele.inventory.data.local.entity.ProductEntity
@@ -517,6 +518,9 @@ private fun ProductRow(
                     Text(
                         text = product.name,
                         style = MaterialTheme.typography.bodyLarge,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
                     product.nutriscore?.let { grade ->
                         NutriscoreBadge(grade = grade, modifier = Modifier.padding(start = 6.dp))
