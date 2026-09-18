@@ -6,6 +6,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -33,12 +34,12 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DocumentScanner
-import androidx.compose.material.icons.filled.EditCalendar
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ErrorOutline
+import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
-import androidx.compose.material.icons.filled.NoFood
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.QrCodeScanner
 import androidx.compose.material.icons.filled.RemoveShoppingCart
@@ -78,6 +79,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.R
@@ -602,32 +604,41 @@ private fun ProductRow(
             Row(verticalAlignment = Alignment.CenterVertically) {
                 ProductAvatar(name = product.name, size = 40.dp)
                 Spacer(Modifier.width(Spacing.md))
-                Text(
-                    text = product.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurface,
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f),
-                )
-                product.nutriscore?.let { grade ->
-                    NutriscoreBadge(grade = grade, modifier = Modifier.padding(horizontal = Spacing.xs))
-                }
                 // Le stepper de quantité ouvre déjà cette même boîte de dialogue au clic sur la
                 // valeur, mais rien n'indiquait qu'elle donne aussi accès à la date de péremption
-                // et au seuil de stock bas : un crayon à côté du nom rend ce geste visible.
-                IconButton(
-                    onClick = onQuantityClick,
-                    colors =
-                        IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
-                        ),
+                // et au seuil de stock bas. Plutôt qu'un 4e IconButton (qui grignote encore la
+                // largeur du nom, déjà à l'étroit entre l'avatar et les trois boutons suivants), le
+                // nom lui-même devient la cible : la zone cliquable est plus grande qu'un bouton, et
+                // le petit crayon qui la suit dit ce qu'un tap y déclenche.
+                Row(
+                    modifier =
+                        Modifier
+                            .weight(1f)
+                            .clickable(
+                                onClickLabel = "Modifier la date de péremption et le stock",
+                                role = Role.Button,
+                                onClick = onQuantityClick,
+                            ),
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(
-                        Icons.Default.EditCalendar,
-                        contentDescription = "Modifier la date de péremption et le stock",
-                        modifier = Modifier.size(20.dp),
+                    Text(
+                        text = product.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        color = MaterialTheme.colorScheme.onSurface,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f, fill = false),
                     )
+                    Spacer(Modifier.width(Spacing.xs))
+                    Icon(
+                        Icons.Default.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(14.dp),
+                    )
+                }
+                product.nutriscore?.let { grade ->
+                    NutriscoreBadge(grade = grade, modifier = Modifier.padding(horizontal = Spacing.xs))
                 }
                 IconButton(
                     onClick = onShoppingListClick,
@@ -690,7 +701,7 @@ private fun ProductRow(
                             label = "Entamé",
                             containerColor = RangeleTheme.accents.warningContainer,
                             contentColor = RangeleTheme.accents.onWarningContainer,
-                            icon = Icons.Default.NoFood,
+                            icon = Icons.Default.Inventory,
                         )
                     }
                 }
