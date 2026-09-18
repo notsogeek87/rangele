@@ -29,6 +29,9 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SegmentedButton
+import androidx.compose.material3.SegmentedButtonDefaults
+import androidx.compose.material3.SingleChoiceSegmentedButtonRow
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
@@ -53,6 +56,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.rangele.inventory.R
+import com.rangele.inventory.data.settings.ThemeMode
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -130,6 +134,20 @@ fun SettingsScreen(
             }
 
             HorizontalDivider(modifier = Modifier.padding(bottom = 16.dp))
+
+            Text("Apparence", style = MaterialTheme.typography.titleMedium)
+            Text(
+                "« Système » suit le réglage clair/sombre de l'appareil.",
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+            )
+            ThemeModeSelector(
+                selected = uiState.themeMode,
+                onSelected = viewModel::onThemeModeChanged,
+            )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -263,6 +281,32 @@ fun SettingsScreen(
                 TextButton(onClick = { showRestoreConfirm = false }) { Text("Annuler") }
             },
         )
+    }
+}
+
+/** Sélecteur « Système / Clair / Sombre » de l'apparence de l'app, en boutons segmentés. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun ThemeModeSelector(
+    selected: ThemeMode,
+    onSelected: (ThemeMode) -> Unit,
+) {
+    val options =
+        listOf(
+            ThemeMode.SYSTEM to "Système",
+            ThemeMode.LIGHT to "Clair",
+            ThemeMode.DARK to "Sombre",
+        )
+    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+        options.forEachIndexed { index, (mode, label) ->
+            SegmentedButton(
+                selected = selected == mode,
+                onClick = { onSelected(mode) },
+                shape = SegmentedButtonDefaults.itemShape(index = index, count = options.size),
+            ) {
+                Text(label)
+            }
+        }
     }
 }
 

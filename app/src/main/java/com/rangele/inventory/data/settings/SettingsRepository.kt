@@ -18,4 +18,9 @@ interface SettingsRepository {
     val lastBackupTimestamp: Flow<Long?>
 
     suspend fun setLastBackupTimestamp(timestamp: Long)
+
+    /** Apparence choisie dans Paramètres — [ThemeMode.SYSTEM] par défaut. */
+    val themeMode: Flow<ThemeMode>
+
+    suspend fun setThemeMode(mode: ThemeMode)
 }

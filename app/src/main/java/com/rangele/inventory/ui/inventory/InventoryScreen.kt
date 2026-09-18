@@ -33,6 +33,7 @@ import androidx.compose.material.icons.filled.CalendarToday
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.DeleteOutline
 import androidx.compose.material.icons.filled.DocumentScanner
+import androidx.compose.material.icons.filled.EditCalendar
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Inventory2
 import androidx.compose.material.icons.filled.MoreHoriz
@@ -611,6 +612,22 @@ private fun ProductRow(
                 )
                 product.nutriscore?.let { grade ->
                     NutriscoreBadge(grade = grade, modifier = Modifier.padding(horizontal = Spacing.xs))
+                }
+                // Le stepper de quantité ouvre déjà cette même boîte de dialogue au clic sur la
+                // valeur, mais rien n'indiquait qu'elle donne aussi accès à la date de péremption
+                // et au seuil de stock bas : un crayon à côté du nom rend ce geste visible.
+                IconButton(
+                    onClick = onQuantityClick,
+                    colors =
+                        IconButtonDefaults.iconButtonColors(
+                            contentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        ),
+                ) {
+                    Icon(
+                        Icons.Default.EditCalendar,
+                        contentDescription = "Modifier la date de péremption et le stock",
+                        modifier = Modifier.size(20.dp),
+                    )
                 }
                 IconButton(
                     onClick = onShoppingListClick,
