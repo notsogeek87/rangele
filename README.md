@@ -52,3 +52,42 @@ correspondant à `main`), donc chaque run publie les deux APK debug, quelle que 
   c'est la page à utiliser pour télécharger l'APK.
 - Onglet **Actions** → un run → artifacts en bas de page : copie horodatée par commit
   (`inventaire-placard-<env>-<sha court>`), expire au bout de 90 jours.
+
+## Compatibilité
+
+- `minSdk` 26 (Android 8.0) — `targetSdk`/`compileSdk` 35 (Android 15).
+- `applicationId` : `com.rangele.inventory` (flavor `production`, celui qui correspond à `main` ;
+  le flavor `staging` ajoute le suffixe `.staging` pour une installation séparée, voir
+  `app/build.gradle.kts`).
+
+## Permissions
+
+| Permission | Usage |
+| --- | --- |
+| `CAMERA` (`android:required="false"` sur la feature caméra) | Photo du ticket de courses pour l'OCR (scan de ticket). |
+| `INTERNET` | Uniquement pour interroger [Open Food Facts](https://openfoodfacts.org) (API de lecture publique, sans clé) lors d'un scan de code-barres, afin de préremplir le nom/la catégorie du produit. Aucun autre appel réseau : pas de backend, pas de compte, pas de télémétrie. |
+| `POST_NOTIFICATIONS` (API 33+, demandée à l'exécution) | Notification locale quotidienne de péremption (WorkManager), activable/réglable dans Paramètres. |
+
+## Versioning & releases
+
+Chaque push sur `staging`/`main` publie une **release GitHub par build** (pas de tag partagé
+écrasé à chaque fois) :
+- tag `v<versionName>-<run_number>` (ex. `v1.0-25`) pour la branche `main` — release normale,
+  marquée "Latest release" par GitHub.
+- tag `staging-v<versionName>-<run_number>` pour la branche `staging` — pre-release.
+
+`<versionName>` vient tel quel de `app/build.gradle.kts` ; `<run_number>` est le numéro de run
+GitHub Actions, ce qui rend chaque tag unique même si `versionName` ne change pas entre deux
+builds.
+
+**Limite connue :** `versionCode` est actuellement une valeur fixe (`1`) dans
+`app/build.gradle.kts`, jamais incrémentée par la CI. Tous les APK publiés à ce jour partagent
+donc le même `versionCode`, ce qui empêche un mécanisme de mise à jour basé dessus (Play Store,
+F-Droid, IzzyOnDroid…) de distinguer une release d'une autre comme une mise à jour valide. Avant
+toute soumission à un dépôt tiers, `versionCode` doit augmenter strictement à chaque release
+publiée (par exemple en l'injectant depuis `.github/workflows/build.yml` plutôt qu'en le codant en
+dur dans `app/build.gradle.kts`).
+
+## Licence
+
+GNU General Public License v3.0 (GPL-3.0) — voir [`LICENSE`](LICENSE).
