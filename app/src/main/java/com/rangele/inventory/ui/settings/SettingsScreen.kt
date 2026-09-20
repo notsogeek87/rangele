@@ -214,6 +214,27 @@ fun SettingsScreen(
 
             HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text("Suggestion automatique de courses", style = MaterialTheme.typography.bodyLarge)
+                    Text(
+                        "Ajoute un produit à la liste de courses dès que son stock passe sous son seuil. " +
+                            "Désactivée, seul le bouton panier de l'inventaire alimente la liste.",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
+                }
+                Switch(
+                    checked = uiState.thresholdModeEnabled,
+                    onCheckedChange = viewModel::onThresholdModeToggled,
+                )
+            }
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
             Text("Sauvegarde", style = MaterialTheme.typography.titleMedium)
             Text(
                 formatLastBackup(uiState.lastBackupAt),

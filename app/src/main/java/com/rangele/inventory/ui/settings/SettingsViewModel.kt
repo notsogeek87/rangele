@@ -26,6 +26,7 @@ data class SettingsUiState(
     val backupInProgress: Boolean = false,
     val backupMessage: String? = null,
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
+    val thresholdModeEnabled: Boolean = true,
 )
 
 private data class BackupOpState(
@@ -46,7 +47,8 @@ class SettingsViewModel(
             settingsRepository.lastBackupTimestamp,
             backupState,
             settingsRepository.themeMode,
-        ) { settings, lastBackupAt, backupOp, themeMode ->
+            settingsRepository.thresholdModeEnabled,
+        ) { settings, lastBackupAt, backupOp, themeMode, thresholdModeEnabled ->
             SettingsUiState(
                 notificationsEnabled = settings.enabled,
                 delayDays = settings.delayDays,
@@ -56,6 +58,7 @@ class SettingsViewModel(
                 backupInProgress = backupOp.inProgress,
                 backupMessage = backupOp.message,
                 themeMode = themeMode,
+                thresholdModeEnabled = thresholdModeEnabled,
             )
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SettingsUiState())
 
@@ -135,6 +138,12 @@ class SettingsViewModel(
     fun onThemeModeChanged(mode: ThemeMode) {
         viewModelScope.launch {
             settingsRepository.setThemeMode(mode)
+        }
+    }
+
+    fun onThresholdModeToggled(enabled: Boolean) {
+        viewModelScope.launch {
+            settingsRepository.setThresholdModeEnabled(enabled)
         }
     }
 }

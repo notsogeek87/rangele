@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.repository.InventoryRepository
+import com.rangele.inventory.data.settings.SettingsRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -20,12 +21,19 @@ data class ShoppingListUiState(
 
 class ShoppingListViewModel(
     repository: InventoryRepository,
+    settingsRepository: SettingsRepository,
 ) : ViewModel() {
     private val checkedIds = MutableStateFlow<Set<Long>>(emptySet())
 
     val uiState: StateFlow<ShoppingListUiState> =
-        combine(repository.observeLowStockProducts(), checkedIds) { products, checked ->
-            ShoppingListUiState(products, checked.intersect(products.map { it.id }.toSet()))
+        combine(
+            repository.observeLowStockProducts(),
+            settingsRepository.thresholdModeEnabled,
+            checkedIds,
+        ) { products, thresholdModeEnabled, checked ->
+            // Mode seuil désactivé : seul l'ajout manuel (bouton panier) alimente la liste.
+            val visible = if (thresholdModeEnabled) products else products.filter { it.inShoppingList }
+            ShoppingListUiState(visible, checked.intersect(visible.map { it.id }.toSet()))
         }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), ShoppingListUiState())
 
     fun onToggle(product: ProductEntity) {

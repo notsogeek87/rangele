@@ -55,6 +55,13 @@ class SettingsRepositoryImpl(
         dataStore.edit { it[Keys.THEME_MODE] = mode.name }
     }
 
+    override val thresholdModeEnabled: Flow<Boolean> =
+        dataStore.data.map { prefs -> prefs[Keys.THRESHOLD_MODE_ENABLED] ?: true }
+
+    override suspend fun setThresholdModeEnabled(enabled: Boolean) {
+        dataStore.edit { it[Keys.THRESHOLD_MODE_ENABLED] = enabled }
+    }
+
     private object Keys {
         val ENABLED = booleanPreferencesKey("notifications_enabled")
         val DELAY_DAYS = intPreferencesKey("expiration_delay_days")
@@ -62,5 +69,6 @@ class SettingsRepositoryImpl(
         val MINUTE = intPreferencesKey("notification_minute")
         val LAST_BACKUP_AT = longPreferencesKey("last_backup_at")
         val THEME_MODE = stringPreferencesKey("theme_mode")
+        val THRESHOLD_MODE_ENABLED = booleanPreferencesKey("threshold_mode_enabled")
     }
 }
