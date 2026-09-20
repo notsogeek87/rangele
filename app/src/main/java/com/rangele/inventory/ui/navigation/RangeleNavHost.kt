@@ -192,7 +192,12 @@ fun RangeleNavHost(
             val viewModel: ShoppingListViewModel =
                 viewModel(
                     entry,
-                    factory = viewModelFactory { initializer { ShoppingListViewModel(container.inventoryRepository) } },
+                    factory =
+                        viewModelFactory {
+                            initializer {
+                                ShoppingListViewModel(container.inventoryRepository, container.settingsRepository)
+                            }
+                        },
                 )
             ShoppingListScreen(viewModel = viewModel, onBackClick = { navController.popBackStack() })
         }

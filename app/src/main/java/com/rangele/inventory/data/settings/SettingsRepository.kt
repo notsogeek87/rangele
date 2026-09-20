@@ -23,4 +23,12 @@ interface SettingsRepository {
     val themeMode: Flow<ThemeMode>
 
     suspend fun setThemeMode(mode: ThemeMode)
+
+    /**
+     * Suggestion automatique de la liste de courses par seuil de stock bas — activée par défaut.
+     * Désactivée, seul l'ajout manuel (bouton panier) alimente la liste.
+     */
+    val thresholdModeEnabled: Flow<Boolean>
+
+    suspend fun setThresholdModeEnabled(enabled: Boolean)
 }

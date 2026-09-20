@@ -3,6 +3,7 @@ package com.rangele.inventory.ui.shoppinglist
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.testutil.FakeInventoryRepository
+import com.rangele.inventory.testutil.FakeSettingsRepository
 import com.rangele.inventory.testutil.MainDispatcherRule
 import kotlinx.coroutines.flow.launchIn
 import kotlinx.coroutines.test.runTest
@@ -20,12 +21,14 @@ class ShoppingListViewModelTest {
         name: String,
         quantity: Double,
         lowStockThreshold: Double?,
+        inShoppingList: Boolean = false,
     ) = ProductEntity(
         id = id,
         name = name,
         quantity = quantity,
         unit = QuantityUnit.PIECE.name,
         lowStockThreshold = lowStockThreshold,
+        inShoppingList = inShoppingList,
     )
 
     @Test
@@ -39,7 +42,7 @@ class ShoppingListViewModelTest {
                         product(3, "Farine", quantity = 1.0, lowStockThreshold = null),
                     ),
                 )
-            val viewModel = ShoppingListViewModel(repository)
+            val viewModel = ShoppingListViewModel(repository, FakeSettingsRepository())
             viewModel.uiState.launchIn(backgroundScope)
 
             assertEquals(
@@ -63,7 +66,7 @@ class ShoppingListViewModelTest {
                         product(6, "ZeroStockAtZeroThreshold", quantity = 0.0, lowStockThreshold = 0.0),
                     ),
                 )
-            val viewModel = ShoppingListViewModel(repository)
+            val viewModel = ShoppingListViewModel(repository, FakeSettingsRepository())
             viewModel.uiState.launchIn(backgroundScope)
 
             assertEquals(
@@ -90,7 +93,7 @@ class ShoppingListViewModelTest {
                         product(2, "Beurre", quantity = 0.0, lowStockThreshold = 1.0),
                     ),
                 )
-            val viewModel = ShoppingListViewModel(repository)
+            val viewModel = ShoppingListViewModel(repository, FakeSettingsRepository())
             viewModel.uiState.launchIn(backgroundScope)
 
             viewModel.onToggle(
@@ -102,6 +105,27 @@ class ShoppingListViewModelTest {
             assertTrue(
                 viewModel.uiState.value.checkedProducts
                     .none { it.name == "Beurre" },
+            )
+        }
+
+    @Test
+    fun `threshold mode disabled hides automatic suggestions but keeps manual additions`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository =
+                FakeInventoryRepository(
+                    listOf(
+                        product(1, "Lait", quantity = 1.0, lowStockThreshold = 2.0),
+                        product(2, "Beurre", quantity = 5.0, lowStockThreshold = 2.0, inShoppingList = true),
+                    ),
+                )
+            val viewModel =
+                ShoppingListViewModel(repository, FakeSettingsRepository(initialThresholdModeEnabled = false))
+            viewModel.uiState.launchIn(backgroundScope)
+
+            assertEquals(
+                listOf("Beurre"),
+                viewModel.uiState.value.products
+                    .map { it.name },
             )
         }
 }
