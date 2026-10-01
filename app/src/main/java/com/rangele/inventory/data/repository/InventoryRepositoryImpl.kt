@@ -20,9 +20,11 @@ class InventoryRepositoryImpl(
     override fun observeProducts(
         query: String,
         category: String?,
+        pantryId: Long?,
         sortByExpiration: Boolean,
         sortByRecent: Boolean,
-    ): Flow<List<ProductEntity>> = productDao.observeProducts(query.trim(), category, sortByExpiration, sortByRecent)
+    ): Flow<List<ProductEntity>> =
+        productDao.observeProducts(query.trim(), category, pantryId, sortByExpiration, sortByRecent)
 
     override fun observeLowStockProducts(): Flow<List<ProductEntity>> = productDao.observeLowStock()
 
@@ -145,6 +147,14 @@ class InventoryRepositoryImpl(
                 updatedAt = System.currentTimeMillis(),
             ),
         )
+    }
+
+    override suspend fun updatePantry(
+        productId: Long,
+        pantryId: Long?,
+    ) {
+        val existing = productDao.getById(productId) ?: return
+        productDao.update(existing.copy(pantryId = pantryId, updatedAt = System.currentTimeMillis()))
     }
 
     override suspend fun updateLowStockThreshold(

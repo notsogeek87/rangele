@@ -17,6 +17,7 @@ interface InventoryRepository {
     fun observeProducts(
         query: String = "",
         category: String? = null,
+        pantryId: Long? = null,
         sortByExpiration: Boolean = false,
         sortByRecent: Boolean = false,
     ): Flow<List<ProductEntity>>
@@ -70,6 +71,12 @@ interface InventoryRepository {
     suspend fun updateLowStockThreshold(
         productId: Long,
         lowStockThreshold: Double?,
+    )
+
+    /** Range le produit dans un placard, ou le détache de tout placard quand [pantryId] est null. */
+    suspend fun updatePantry(
+        productId: Long,
+        pantryId: Long?,
     )
 
     /**

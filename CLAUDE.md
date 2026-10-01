@@ -42,8 +42,9 @@ Fonctionnalités V3 (au-dessus du MVP) :
   placard par défaut) dans un écran dédié accessible depuis le menu « ⋮ » de l'inventaire ; le
   placard par défaut est présélectionné à chaque ajout de produit (manuel, scan de code-barres
   ou revue de ticket). Si l'utilisateur n'a encore aucun placard, l'inventaire lui propose d'en
-  créer un à l'ouverture de l'app. Supprimer un placard détache simplement les produits qui
-  l'utilisaient.
+  créer un à l'ouverture de l'app. Sur l'accueil, des chips filtrent l'inventaire par placard, chaque ligne affiche son placard,
+  et la fiche produit (clic sur le nom) permet de le changer. Supprimer un placard détache
+  simplement les produits qui l'utilisaient.
 
 Le MVP et la V3 sont implémentés (`app/src/main/java/com/rangele/inventory`) : Room, repository,
 écrans Compose (inventaire, ajout, scan/vérification de ticket, catégories, placards, historique,

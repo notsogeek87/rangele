@@ -38,6 +38,7 @@ import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material.icons.filled.Inventory
 import androidx.compose.material.icons.filled.Inventory2
+import androidx.compose.material.icons.filled.Kitchen
 import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
@@ -83,6 +84,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.rangele.inventory.R
+import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.repository.ItemDetails
 import com.rangele.inventory.ui.components.EmptyState
@@ -90,6 +92,7 @@ import com.rangele.inventory.ui.components.ExpirationDateField
 import com.rangele.inventory.ui.components.LowStockThresholdField
 import com.rangele.inventory.ui.components.NutriscoreBadge
 import com.rangele.inventory.ui.components.OpenedCheckbox
+import com.rangele.inventory.ui.components.PantryDropdown
 import com.rangele.inventory.ui.components.ProductAvatar
 import com.rangele.inventory.ui.components.QuantityStepper
 import com.rangele.inventory.ui.components.SearchField
@@ -293,8 +296,38 @@ fun InventoryScreen(
                 }
             }
 
+            if (uiState.availablePantries.isNotEmpty()) {
+                LazyRow(
+                    contentPadding = PaddingValues(horizontal = Spacing.lg),
+                    horizontalArrangement = Arrangement.spacedBy(Spacing.sm),
+                    modifier = Modifier.fillMaxWidth().padding(bottom = Spacing.sm),
+                ) {
+                    item {
+                        CategoryChip(
+                            label = "Tous les placards",
+                            selected = uiState.selectedPantryId == null,
+                            onClick = { viewModel.onPantryFilterChanged(null) },
+                        )
+                    }
+                    items(uiState.availablePantries, key = { it.id }) { pantry ->
+                        CategoryChip(
+                            label = pantry.name,
+                            selected = uiState.selectedPantryId == pantry.id,
+                            onClick = {
+                                viewModel.onPantryFilterChanged(
+                                    if (uiState.selectedPantryId == pantry.id) null else pantry.id,
+                                )
+                            },
+                        )
+                    }
+                }
+            }
+
             if (uiState.products.isEmpty() && !uiState.isLoading) {
-                if (searchQueryInput.isBlank()) {
+                if (searchQueryInput.isBlank() &&
+                    uiState.selectedPantryId == null &&
+                    uiState.selectedCategory == null
+                ) {
                     EmptyState(
                         icon = Icons.Default.Inventory2,
                         title = "Votre placard est vide",
@@ -306,7 +339,12 @@ fun InventoryScreen(
                     EmptyState(
                         icon = Icons.Default.SearchOff,
                         title = "Aucun résultat",
-                        description = "Rien ne correspond à « $searchQueryInput » dans votre inventaire.",
+                        description =
+                            if (searchQueryInput.isBlank()) {
+                                "Aucun produit ne correspond aux filtres choisis."
+                            } else {
+                                "Rien ne correspond à « $searchQueryInput » dans votre inventaire."
+                            },
                     )
                 }
             } else {
@@ -326,6 +364,7 @@ fun InventoryScreen(
                     items(uiState.products, key = { it.id }) { product ->
                         ProductRow(
                             product = product,
+                            pantryName = uiState.availablePantries.firstOrNull { it.id == product.pantryId }?.name,
                             onIncrement = { viewModel.onIncrement(product) },
                             onDecrement = { viewModel.onDecrement(product) },
                             onQuantityClick = { productPendingEdit = product },
@@ -346,12 +385,13 @@ fun InventoryScreen(
                 EditItemsDialog(
                     product = product,
                     items = items,
+                    pantries = uiState.availablePantries,
                     onDismiss = {
                         viewModel.onEditDialogClosed()
                         productPendingEdit = null
                     },
-                    onConfirm = { items, lowStockThreshold ->
-                        viewModel.onItemsSaved(product, items, lowStockThreshold)
+                    onConfirm = { items, lowStockThreshold, pantryId ->
+                        viewModel.onItemsSaved(product, items, lowStockThreshold, pantryId)
                         viewModel.onEditDialogClosed()
                         productPendingEdit = null
                     },
@@ -360,9 +400,17 @@ fun InventoryScreen(
         } else {
             EditQuantityDialog(
                 product = product,
+                pantries = uiState.availablePantries,
                 onDismiss = { productPendingEdit = null },
-                onConfirm = { newQuantity, expirationDate, opened, lowStockThreshold ->
-                    viewModel.onProductSheetSaved(product, newQuantity, expirationDate, opened, lowStockThreshold)
+                onConfirm = { newQuantity, expirationDate, opened, lowStockThreshold, pantryId ->
+                    viewModel.onProductSheetSaved(
+                        product,
+                        newQuantity,
+                        expirationDate,
+                        opened,
+                        lowStockThreshold,
+                        pantryId,
+                    )
                     productPendingEdit = null
                 },
             )
@@ -588,6 +636,7 @@ private fun CreateFirstPantryDialog(
 @Composable
 private fun ProductRow(
     product: ProductEntity,
+    pantryName: String?,
     onIncrement: () -> Unit,
     onDecrement: () -> Unit,
     onQuantityClick: () -> Unit,
@@ -693,6 +742,14 @@ private fun ProductRow(
                     horizontalArrangement = Arrangement.spacedBy(Spacing.xs),
                     verticalArrangement = Arrangement.spacedBy(Spacing.xs),
                 ) {
+                    pantryName?.let { name ->
+                        StatusPill(
+                            label = name,
+                            containerColor = MaterialTheme.colorScheme.secondaryContainer,
+                            contentColor = MaterialTheme.colorScheme.onSecondaryContainer,
+                            icon = Icons.Default.Kitchen,
+                        )
+                    }
                     product.expirationDate?.let { expirationDate ->
                         ExpirationPill(expirationDate.toLocalDate())
                     }
@@ -753,9 +810,17 @@ private fun ExpirationPill(date: LocalDate) {
 @Composable
 private fun EditQuantityDialog(
     product: ProductEntity,
+    pantries: List<PantryEntity>,
     onDismiss: () -> Unit,
-    onConfirm: (quantity: Double, expirationDate: Long?, opened: Boolean, lowStockThreshold: Double?) -> Unit,
+    onConfirm: (
+        quantity: Double,
+        expirationDate: Long?,
+        opened: Boolean,
+        lowStockThreshold: Double?,
+        pantryId: Long?,
+    ) -> Unit,
 ) {
+    var pantryId by remember(product.id) { mutableStateOf(product.pantryId) }
     var text by remember(product.id) { mutableStateOf(formatPlainQuantity(product.quantity)) }
     var expirationDate by remember(product.id) { mutableStateOf(product.expirationDate?.toLocalDate()) }
     var opened by remember(product.id) { mutableStateOf(product.opened) }
@@ -786,12 +851,24 @@ private fun EditQuantityDialog(
                     onTextChanged = { thresholdText = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 )
+                PantryDropdown(
+                    pantries = pantries,
+                    selectedPantryId = pantryId,
+                    onPantrySelected = { pantryId = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 text.replace(',', '.').toDoubleOrNull()?.let { quantity ->
-                    onConfirm(quantity, expirationDate?.toEpochMillis(), opened, thresholdText.toDoubleOrNull())
+                    onConfirm(
+                        quantity,
+                        expirationDate?.toEpochMillis(),
+                        opened,
+                        thresholdText.toDoubleOrNull(),
+                        pantryId,
+                    )
                 }
             }) { Text("Enregistrer") }
         },
@@ -818,9 +895,11 @@ private data class ItemDraft(
 private fun EditItemsDialog(
     product: ProductEntity,
     items: List<ItemDetails>,
+    pantries: List<PantryEntity>,
     onDismiss: () -> Unit,
-    onConfirm: (items: List<ItemDetails>, lowStockThreshold: Double?) -> Unit,
+    onConfirm: (items: List<ItemDetails>, lowStockThreshold: Double?, pantryId: Long?) -> Unit,
 ) {
+    var pantryId by remember(product.id) { mutableStateOf(product.pantryId) }
     var drafts by
         remember(product.id) {
             mutableStateOf(items.map { ItemDraft(it.expirationDate?.toLocalDate(), it.opened) })
@@ -872,12 +951,18 @@ private fun EditItemsDialog(
                     onTextChanged = { thresholdText = it },
                     modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
                 )
+                PantryDropdown(
+                    pantries = pantries,
+                    selectedPantryId = pantryId,
+                    onPantrySelected = { pantryId = it },
+                    modifier = Modifier.fillMaxWidth().padding(top = 12.dp),
+                )
             }
         },
         confirmButton = {
             TextButton(onClick = {
                 val items = drafts.map { ItemDetails(it.date?.toEpochMillis(), it.opened) }
-                onConfirm(items, thresholdText.toDoubleOrNull())
+                onConfirm(items, thresholdText.toDoubleOrNull(), pantryId)
             }) { Text("Enregistrer") }
         },
         dismissButton = {

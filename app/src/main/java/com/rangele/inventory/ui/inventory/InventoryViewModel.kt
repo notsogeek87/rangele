@@ -2,6 +2,8 @@ package com.rangele.inventory.ui.inventory
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rangele.inventory.data.local.entity.CategoryEntity
+import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.repository.CategoryRepository
 import com.rangele.inventory.data.repository.InventoryRepository
@@ -32,13 +34,17 @@ data class InventoryUiState(
     val sortMode: SortMode = SortMode.RECENT,
     val selectedCategory: String? = null,
     val availableCategories: List<String> = emptyList(),
+    val selectedPantryId: Long? = null,
+    val availablePantries: List<PantryEntity> = emptyList(),
 )
 
 private data class Filters(
     val query: String,
     val sortMode: SortMode,
     val category: String?,
+    val pantryId: Long?,
     val availableCategories: List<String>,
+    val availablePantries: List<PantryEntity>,
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -50,6 +56,7 @@ class InventoryViewModel(
     private val searchQuery = MutableStateFlow("")
     private val sortMode = MutableStateFlow(SortMode.RECENT)
     private val selectedCategory = MutableStateFlow<String?>(null)
+    private val selectedPantryId = MutableStateFlow<Long?>(null)
 
     private var pantryPromptDismissed = false
     private val _showCreatePantryPrompt = MutableStateFlow(false)
@@ -77,14 +84,25 @@ class InventoryViewModel(
             searchQuery,
             sortMode,
             selectedCategory,
+            selectedPantryId,
             categoryRepository.observeCategories(),
-        ) { query, sort, category, categories ->
-            Filters(query, sort, category, categories.map { it.name })
+            pantryRepository.observePantries(),
+        ) { values ->
+            @Suppress("UNCHECKED_CAST")
+            Filters(
+                query = values[0] as String,
+                sortMode = values[1] as SortMode,
+                category = values[2] as String?,
+                pantryId = values[3] as Long?,
+                availableCategories = (values[4] as List<CategoryEntity>).map { it.name },
+                availablePantries = values[5] as List<PantryEntity>,
+            )
         }.flatMapLatest { filters ->
             repository
                 .observeProducts(
                     query = filters.query,
                     category = filters.category,
+                    pantryId = filters.pantryId,
                     sortByExpiration = filters.sortMode == SortMode.EXPIRATION,
                     sortByRecent = filters.sortMode == SortMode.RECENT,
                 ).map { products ->
@@ -95,6 +113,8 @@ class InventoryViewModel(
                         sortMode = filters.sortMode,
                         selectedCategory = filters.category,
                         availableCategories = filters.availableCategories,
+                        selectedPantryId = filters.pantryId,
+                        availablePantries = filters.availablePantries,
                     )
                 }
         }.stateIn(
@@ -113,6 +133,10 @@ class InventoryViewModel(
 
     fun onCategoryFilterChanged(category: String?) {
         selectedCategory.value = category
+    }
+
+    fun onPantryFilterChanged(pantryId: Long?) {
+        selectedPantryId.value = pantryId
     }
 
     fun onIncrement(product: ProductEntity) {
@@ -137,11 +161,13 @@ class InventoryViewModel(
         expirationDate: Long?,
         opened: Boolean,
         lowStockThreshold: Double?,
+        pantryId: Long? = product.pantryId,
     ) {
         viewModelScope.launch {
             repository.setQuantity(product.id, quantity)
             repository.updateDetails(product.id, expirationDate, opened)
             repository.updateLowStockThreshold(product.id, lowStockThreshold)
+            if (pantryId != product.pantryId) repository.updatePantry(product.id, pantryId)
         }
     }
 
@@ -159,10 +185,12 @@ class InventoryViewModel(
         product: ProductEntity,
         items: List<ItemDetails>,
         lowStockThreshold: Double?,
+        pantryId: Long? = product.pantryId,
     ) {
         viewModelScope.launch {
             repository.saveItems(product.id, items)
             repository.updateLowStockThreshold(product.id, lowStockThreshold)
+            if (pantryId != product.pantryId) repository.updatePantry(product.id, pantryId)
         }
     }
 

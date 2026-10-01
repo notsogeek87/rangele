@@ -30,6 +30,7 @@ class FakeInventoryRepository(
     override fun observeProducts(
         query: String,
         category: String?,
+        pantryId: Long?,
         sortByExpiration: Boolean,
         sortByRecent: Boolean,
     ): Flow<List<ProductEntity>> =
@@ -38,6 +39,7 @@ class FakeInventoryRepository(
                 list
                     .filter { query.isBlank() || it.name.contains(query, ignoreCase = true) }
                     .filter { category == null || it.category == category }
+                    .filter { pantryId == null || it.pantryId == pantryId }
             when {
                 sortByRecent ->
                     filtered.sortedWith(
@@ -158,6 +160,13 @@ class FakeInventoryRepository(
         opened: Boolean,
     ) {
         replace(productId) { it.copy(expirationDate = expirationDate, opened = opened) }
+    }
+
+    override suspend fun updatePantry(
+        productId: Long,
+        pantryId: Long?,
+    ) {
+        replace(productId) { it.copy(pantryId = pantryId) }
     }
 
     override suspend fun updateLowStockThreshold(

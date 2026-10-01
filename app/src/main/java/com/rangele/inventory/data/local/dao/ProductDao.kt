@@ -21,6 +21,7 @@ interface ProductDao {
         "SELECT * FROM products " +
             "WHERE (:query = '' OR name LIKE '%' || :query || '%') " +
             "AND (:category IS NULL OR category = :category) " +
+            "AND (:pantryId IS NULL OR pantry_id = :pantryId) " +
             "ORDER BY " +
             "CASE WHEN :sortByRecent THEN -created_at ELSE 0 END ASC, " +
             "CASE WHEN :sortByExpiration THEN (expiration_date IS NULL) ELSE 0 END ASC, " +
@@ -30,6 +31,7 @@ interface ProductDao {
     fun observeProducts(
         query: String,
         category: String?,
+        pantryId: Long?,
         sortByExpiration: Boolean,
         sortByRecent: Boolean,
     ): Flow<List<ProductEntity>>

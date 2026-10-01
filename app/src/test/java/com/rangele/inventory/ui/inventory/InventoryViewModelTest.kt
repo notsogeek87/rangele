@@ -1,5 +1,6 @@
 package com.rangele.inventory.ui.inventory
 
+import com.rangele.inventory.data.local.entity.PantryEntity
 import com.rangele.inventory.data.local.entity.ProductEntity
 import com.rangele.inventory.data.model.QuantityUnit
 import com.rangele.inventory.testutil.FakeCategoryRepository
@@ -26,6 +27,7 @@ class InventoryViewModelTest {
         category: String? = null,
         expirationDate: Long? = null,
         createdAt: Long = 0L,
+        pantryId: Long? = null,
     ) = ProductEntity(
         id = id,
         name = name,
@@ -36,6 +38,7 @@ class InventoryViewModelTest {
         // Même date d'ajout par défaut pour tous : les tests qui ne portent pas sur le tri
         // « ajout récent » retombent alors sur le départage par nom, donc sur un ordre stable.
         createdAt = createdAt,
+        pantryId = pantryId,
     )
 
     /** Keeps the WhileSubscribed StateFlow active for the duration of a test. */
@@ -266,5 +269,48 @@ class InventoryViewModelTest {
                 viewModel.uiState.value.products
                     .isEmpty(),
             )
+        }
+
+    @Test
+    fun `filtering by pantry keeps only its products and can be cleared`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val repository =
+                FakeInventoryRepository(
+                    listOf(
+                        product(1, "Farine", pantryId = 10),
+                        product(2, "Glace", pantryId = 20),
+                        product(3, "Sel"),
+                    ),
+                )
+            val pantries =
+                FakePantryRepository(
+                    listOf(PantryEntity(id = 10, name = "Cuisine"), PantryEntity(id = 20, name = "Congélateur")),
+                )
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), pantries)
+            viewModel.collectInBackground(backgroundScope)
+
+            viewModel.onPantryFilterChanged(10)
+            assertEquals(
+                listOf("Farine"),
+                viewModel.uiState.value.products
+                    .map { it.name },
+            )
+            assertEquals(10L, viewModel.uiState.value.selectedPantryId)
+
+            viewModel.onPantryFilterChanged(null)
+            assertEquals(3, viewModel.uiState.value.products.size)
+        }
+
+    @Test
+    fun `saving a product sheet moves the product to the chosen pantry`() =
+        runTest(mainDispatcherRule.dispatcher) {
+            val item = product(1, "Farine", quantity = 500.0, unit = QuantityUnit.GRAM)
+            val repository = FakeInventoryRepository(listOf(item))
+            val viewModel = InventoryViewModel(repository, FakeCategoryRepository(), FakePantryRepository())
+            viewModel.collectInBackground(backgroundScope)
+
+            viewModel.onProductSheetSaved(item, 500.0, null, false, 1.0, pantryId = 10)
+
+            assertEquals(10L, repository.getById(1)?.pantryId)
         }
 }
