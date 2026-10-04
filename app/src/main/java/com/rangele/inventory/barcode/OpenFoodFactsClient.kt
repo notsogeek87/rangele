@@ -19,20 +19,45 @@ interface OpenFoodFactsClient {
  * consistent with this app's hand-rolled-over-framework approach elsewhere
  * (see [AppContainer][com.rangele.inventory.AppContainer]).
  */
-class OpenFoodFactsClientImpl : OpenFoodFactsClient {
+class OpenFoodFactsClientImpl(
+    private val baseUrls: List<String> = DEFAULT_BASE_URLS,
+) : OpenFoodFactsClient {
+    /**
+     * Interroge les bases sœurs dans l'ordre (alimentaire, cosmétique, autres produits) : elles partagent
+     * le même format d'API. Le premier résultat trouvé gagne ; un « inconnu » passe à la base suivante.
+     * Si aucune base ne connaît le produit mais qu'au moins une était injoignable, on renvoie
+     * [OffLookupResult.NetworkError] pour ne pas mettre en cache un faux « introuvable ».
+     */
     override suspend fun lookupProduct(barcode: String): OffLookupResult =
         withContext(Dispatchers.IO) {
-            runCatching { parseOffResponse(barcode, fetch(barcode)) }
-                .recoverCatching {
-                    // Transient blips (DNS hiccup, brief timeout) are common on mobile networks;
-                    // one retry after a short pause avoids surfacing an error the user would just retry themselves.
-                    delay(RETRY_DELAY_MILLIS)
-                    parseOffResponse(barcode, fetch(barcode))
-                }.getOrElse { OffLookupResult.NetworkError }
+            var hadNetworkError = false
+            for (baseUrl in baseUrls) {
+                when (val result = lookupOn(baseUrl, barcode)) {
+                    is OffLookupResult.Found -> return@withContext result
+                    is OffLookupResult.NotFound -> Unit
+                    OffLookupResult.NetworkError -> hadNetworkError = true
+                }
+            }
+            if (hadNetworkError) OffLookupResult.NetworkError else OffLookupResult.NotFound(barcode)
         }
 
-    private fun fetch(barcode: String): String {
-        val url = URL("$BASE_URL$barcode.json?fields=$FIELDS")
+    private suspend fun lookupOn(
+        baseUrl: String,
+        barcode: String,
+    ): OffLookupResult =
+        runCatching { parseOffResponse(barcode, fetch(baseUrl, barcode)) }
+            .recoverCatching {
+                // Transient blips (DNS hiccup, brief timeout) are common on mobile networks;
+                // one retry after a short pause avoids surfacing an error the user would just retry themselves.
+                delay(RETRY_DELAY_MILLIS)
+                parseOffResponse(barcode, fetch(baseUrl, barcode))
+            }.getOrElse { OffLookupResult.NetworkError }
+
+    private fun fetch(
+        baseUrl: String,
+        barcode: String,
+    ): String {
+        val url = URL("$baseUrl$barcode.json?fields=$FIELDS")
         val connection = url.openConnection() as HttpURLConnection
         return try {
             connection.requestMethod = "GET"
@@ -48,15 +73,21 @@ class OpenFoodFactsClientImpl : OpenFoodFactsClient {
         }
     }
 
-    private companion object {
-        const val BASE_URL = "https://world.openfoodfacts.org/api/v2/product/"
-        const val FIELDS = "code,product_name,brands,quantity,categories,image_front_url,image_url,nutriscore_grade"
+    companion object {
+        val DEFAULT_BASE_URLS =
+            listOf(
+                "https://world.openfoodfacts.org/api/v2/product/",
+                "https://world.openbeautyfacts.org/api/v2/product/",
+                "https://world.openproductsfacts.org/api/v2/product/",
+            )
+        private const val FIELDS =
+            "code,product_name,brands,quantity,categories,image_front_url,image_url,nutriscore_grade"
 
         // Open Food Facts asks clients to identify themselves with app name, version and a contact/link;
         // a missing or generic User-Agent is treated as abusive traffic and can be throttled or blocked.
-        const val USER_AGENT = "Rangele-Android/1.0 (+https://github.com/notsogeek87/rangele)"
-        const val TIMEOUT_MILLIS = 15_000
-        const val RETRY_DELAY_MILLIS = 1_500L
+        private const val USER_AGENT = "Rangele-Android/1.0 (+https://github.com/notsogeek87/rangele)"
+        private const val TIMEOUT_MILLIS = 15_000
+        private const val RETRY_DELAY_MILLIS = 1_500L
     }
 }
 
