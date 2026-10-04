@@ -59,6 +59,10 @@ fun BarcodeScanScreen(
     val analysisExecutor = remember { Executors.newSingleThreadExecutor() }
     var hasDetected by remember { mutableStateOf(false) }
 
+    // Le ViewModel survit tant que le graphe est sur la pile : si l'on revient ici par le retour système
+    // (et non par la flèche de l'écran résultat), l'ancien produit y serait encore et ignorerait tout nouveau scan.
+    LaunchedEffect(Unit) { viewModel.onRetryScan() }
+
     DisposableEffect(Unit) {
         onDispose { analysisExecutor.shutdown() }
     }

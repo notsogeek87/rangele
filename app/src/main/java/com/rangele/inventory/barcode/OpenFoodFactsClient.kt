@@ -54,14 +54,17 @@ class OpenFoodFactsClientImpl(
     private suspend fun lookupOn(
         baseUrl: String,
         barcode: String,
-    ): OffLookupResult =
-        runCatching { parseOffResponse(barcode, fetch(baseUrl, barcode)) }
-            .recoverCatching {
-                // Transient blips (DNS hiccup, brief timeout) are common on mobile networks;
-                // one retry after a short pause avoids surfacing an error the user would just retry themselves.
-                delay(RETRY_DELAY_MILLIS)
-                parseOffResponse(barcode, fetch(baseUrl, barcode))
-            }.getOrElse { OffLookupResult.NetworkError }
+    ): OffLookupResult {
+        // Transient blips (DNS hiccup, réseau mobile qui se réveille, 5xx passager d'une base communautaire)
+        // sont courants : quelques nouvelles tentatives espacées évitent d'afficher une erreur que
+        // l'utilisateur corrigerait lui-même en rescannant.
+        repeat(MAX_ATTEMPTS) { attempt ->
+            val result = runCatching { parseOffResponse(barcode, fetch(baseUrl, barcode)) }
+            result.getOrNull()?.let { return it }
+            if (attempt < MAX_ATTEMPTS - 1) delay(RETRY_DELAY_MILLIS * (attempt + 1))
+        }
+        return OffLookupResult.NetworkError
+    }
 
     private fun fetch(
         baseUrl: String,
@@ -103,6 +106,7 @@ class OpenFoodFactsClientImpl(
         private const val USER_AGENT = "Rangele-Android/1.0 (+https://github.com/notsogeek87/rangele)"
         private const val TIMEOUT_MILLIS = 15_000
         private const val RETRY_DELAY_MILLIS = 1_500L
+        private const val MAX_ATTEMPTS = 3
     }
 }
 
