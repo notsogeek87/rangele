@@ -41,6 +41,7 @@ class SettingsViewModel(
     private val scheduler: ExpirationCheckScheduler,
     private val backupRepository: BackupRepository,
     private val updateManager: UpdateManager,
+    val updatesEnabled: Boolean,
 ) : ViewModel() {
     /** État brut de la bibliothèque ; l'écran le dessine à sa façon. */
     val updateState = updateManager.state

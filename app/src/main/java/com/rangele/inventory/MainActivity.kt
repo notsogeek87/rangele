@@ -11,9 +11,14 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import com.rangele.inventory.data.settings.ThemeMode
 import com.rangele.inventory.ui.navigation.RangeleNavHost
 import com.rangele.inventory.ui.theme.RangeleTheme
+import com.rangele.inventory.ui.update.AppUpdateViewModel
+import com.rangele.inventory.ui.update.UpdatePrompt
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -39,6 +44,19 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background,
                 ) {
                     RangeleNavHost(container = container)
+                    val updateViewModel: AppUpdateViewModel =
+                        viewModel(
+                            factory =
+                                viewModelFactory {
+                                    initializer {
+                                        AppUpdateViewModel(
+                                            container.updateManager,
+                                            container.updatesEnabled,
+                                        )
+                                    }
+                                },
+                        )
+                    UpdatePrompt(updateViewModel)
                 }
             }
         }

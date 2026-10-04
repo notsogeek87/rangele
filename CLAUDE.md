@@ -146,9 +146,12 @@ un seul run produit et publie **deux** APK debug à chaque fois, quelle que soit
 déclenché le build (le flavor `production` est renommé `main` uniquement dans le nom des
 artifacts/releases CI). Deux façons de les récupérer :
 - **Releases GitHub** (page "Releases" du repo) — une release **par build** (donc par push), pas
-  de tag partagé qu'on écrase : tag `staging-v<versionName>-<run_number>` (pre-release) et
-  `v<versionName>-<run_number>` (release), avec un APK `Yakwa-Staging-<versionName>-<run_number>.apk`
-  / `Yakwa-<versionName>-<run_number>.apk` (ex. `Yakwa-1.0-25.apk`). GitHub marque automatiquement
+  de tag partagé qu'on écrase : tag `staging-v<version>` (pre-release) et
+  `v<version>` (release) où `<version>` = `<appVersionBase>.<run_number>` (ex. `v1.0.25`, base lue dans
+  `gradle.properties`), avec un APK `Yakwa-Staging-<version>.apk` / `Yakwa-<version>.apk`
+  (ex. `Yakwa-1.0.25.apk`). Le run number est aussi le `versionCode` et le dernier segment du
+  `versionName` (`BUILD_NUMBER`), condition pour que la mise à jour intégrée (lielugit-updater,
+  vérifiée au lancement et dans Paramètres, variant production seulement) voie la release comme plus récente. GitHub marque automatiquement
   la release `main` la plus récente comme "Latest release" ; c'est l'endroit à privilégier pour
   télécharger un build donné ou le dernier en date.
 - **Artifacts du run** (onglet Actions → run concerné → bas de page) — une copie horodatée par

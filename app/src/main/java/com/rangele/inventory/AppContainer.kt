@@ -100,7 +100,16 @@ class AppContainer(
 
     /** Mise à jour de l'app depuis les releases GitHub de CE dépôt (pas celui de la bibliothèque). */
     val updateManager =
-        UpdateManager(appContext, UpdateConfig(githubOwner = "notsogeek87", githubRepository = "rangele"))
+        UpdateManager(
+            appContext,
+            UpdateConfig(githubOwner = "notsogeek87", githubRepository = "rangele", checkIntervalHours = 1),
+        )
+
+    /**
+     * Les mises à jour viennent de la dernière release `main` (APK production). Le variant staging a un autre
+     * applicationId : Android refuserait d'installer cet APK par-dessus, on ne lui propose donc rien.
+     */
+    val updatesEnabled: Boolean = !appContext.packageName.endsWith(".staging")
 
     private val expirationNotifier = ExpirationNotifier(appContext)
 

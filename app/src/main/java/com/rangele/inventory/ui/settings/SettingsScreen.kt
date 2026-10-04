@@ -272,14 +272,16 @@ fun SettingsScreen(
                 modifier = Modifier.padding(top = 8.dp),
             )
 
-            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+            if (viewModel.updatesEnabled) {
+                HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
 
-            UpdateSection(
-                state = updateState,
-                onCheck = viewModel::onCheckUpdateRequested,
-                onInstall = viewModel::onInstallUpdateRequested,
-                onInstallDownloaded = viewModel::onInstallDownloadedRequested,
-            )
+                UpdateSection(
+                    state = updateState,
+                    onCheck = viewModel::onCheckUpdateRequested,
+                    onInstall = viewModel::onInstallUpdateRequested,
+                    onInstallDownloaded = viewModel::onInstallDownloadedRequested,
+                )
+            }
         }
     }
 

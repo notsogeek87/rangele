@@ -72,21 +72,17 @@ correspondant à `main`), donc chaque run publie les deux APK debug, quelle que 
 
 Chaque push sur `staging`/`main` publie une **release GitHub par build** (pas de tag partagé
 écrasé à chaque fois) :
-- tag `v<versionName>-<run_number>` (ex. `v1.0-25`) pour la branche `main` — release normale,
+- tag `v<version>` avec `<version>` = `<appVersionBase>.<run_number>` (ex. `v1.0.25`) pour la branche `main` — release normale,
   marquée "Latest release" par GitHub.
-- tag `staging-v<versionName>-<run_number>` pour la branche `staging` — pre-release.
+- tag `staging-v<version>` pour la branche `staging` — pre-release.
 
-`<versionName>` vient tel quel de `app/build.gradle.kts` ; `<run_number>` est le numéro de run
-GitHub Actions, ce qui rend chaque tag unique même si `versionName` ne change pas entre deux
-builds.
+Le run number GitHub Actions est injecté dans le build (`BUILD_NUMBER`) : il devient le `versionCode`
+(strictement croissant à chaque release) et le dernier segment du `versionName` (`1.0.25`). La base
+`1.0` se change dans `gradle.properties` (`appVersionBase`). En local, sans `BUILD_NUMBER`, le build
+vaut `1.0.1` / `versionCode` 1.
 
-**Limite connue :** `versionCode` est actuellement une valeur fixe (`1`) dans
-`app/build.gradle.kts`, jamais incrémentée par la CI. Tous les APK publiés à ce jour partagent
-donc le même `versionCode`, ce qui empêche un mécanisme de mise à jour basé dessus (Play Store,
-F-Droid, IzzyOnDroid…) de distinguer une release d'une autre comme une mise à jour valide. Avant
-toute soumission à un dépôt tiers, `versionCode` doit augmenter strictement à chaque release
-publiée (par exemple en l'injectant depuis `.github/workflows/build.yml` plutôt qu'en le codant en
-dur dans `app/build.gradle.kts`).
+**Mise à jour intégrée :** l'app (variant production) vérifie au lancement la dernière release `main`
+et propose de l'installer ; première installation manuelle depuis la page Releases, puis plus rien à faire.
 
 ## Licence
 

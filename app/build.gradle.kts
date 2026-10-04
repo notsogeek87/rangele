@@ -7,6 +7,12 @@ plugins {
     alias(libs.plugins.room)
 }
 
+// Numéro de build croissant : fourni par la CI (BUILD_NUMBER = github.run_number). Il devient le versionCode
+// (Android refuse d'installer par-dessus un versionCode non supérieur) et le dernier segment du versionName,
+// pour que la bibliothèque de mise à jour compare correctement le tag `v1.0.<n>` à la version installée.
+val buildNumber = (System.getenv("BUILD_NUMBER") ?: providers.gradleProperty("buildNumber").orNull)?.toIntOrNull() ?: 1
+val appVersionBase = providers.gradleProperty("appVersionBase").get()
+
 android {
     namespace = "com.rangele.inventory"
     compileSdk = 35
@@ -15,8 +21,8 @@ android {
         applicationId = "com.rangele.inventory"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = buildNumber
+        versionName = "$appVersionBase.$buildNumber"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
