@@ -13,6 +13,8 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LifecycleEventEffect
 import com.lielu.githubupdater.UpdateError
 import com.lielu.githubupdater.UpdateState
 
@@ -22,6 +24,10 @@ fun UpdatePrompt(viewModel: AppUpdateViewModel) {
     val state by viewModel.state.collectAsState()
     val dismissed by viewModel.dismissed.collectAsState()
     val userStarted by viewModel.userStarted.collectAsState()
+
+    // ON_START : au lancement ET quand l'app, restée en mémoire, repasse au premier plan.
+    LifecycleEventEffect(Lifecycle.Event.ON_START) { viewModel.checkOnOpen() }
+
     if (dismissed) return
 
     when (val s = state) {

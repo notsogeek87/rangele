@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.lielu.githubupdater.UpdateInfo
 import com.lielu.githubupdater.UpdateManager
+import com.lielu.githubupdater.UpdateState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -15,7 +16,7 @@ import java.io.File
  */
 class AppUpdateViewModel(
     private val updateManager: UpdateManager,
-    updatesEnabled: Boolean,
+    private val updatesEnabled: Boolean,
 ) : ViewModel() {
     val state = updateManager.state
 
@@ -32,11 +33,18 @@ class AppUpdateViewModel(
     /** `false` tant qu'Android n'a pas autorisé Yakwa à installer des applications (étape à expliquer). */
     fun canInstallPackages(): Boolean = updateManager.canInstallPackages()
 
-    init {
-        if (updatesEnabled) {
-            // Les erreurs (hors ligne, quota GitHub…) sont publiées dans `state` ; ici on reste silencieux.
-            viewModelScope.launch { runCatching { updateManager.checkForUpdate() } }
-        }
+    /**
+     * Appelée à chaque passage de l'app au premier plan. `force = true` : sans cela la bibliothèque réutilise
+     * sa réponse précédente (« à jour ») jusqu'à `checkIntervalHours`, et une release publiée entre-temps
+     * n'est pas vue. Une requête GitHub par ouverture reste très en dessous du quota (60/h).
+     */
+    fun checkOnOpen() {
+        if (!updatesEnabled) return
+        // Ne pas écraser une fenêtre déjà affichée, un téléchargement ou une installation en cours.
+        val s = state.value
+        if (s !is UpdateState.Idle && s !is UpdateState.UpToDate && s !is UpdateState.Error) return
+        // Les erreurs (hors ligne, quota GitHub…) sont publiées dans `state` ; ici on reste silencieux.
+        viewModelScope.launch { runCatching { updateManager.checkForUpdate(force = true) } }
     }
 
     fun onDismiss() {
