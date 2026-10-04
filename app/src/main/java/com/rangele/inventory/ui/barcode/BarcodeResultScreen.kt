@@ -109,8 +109,8 @@ fun BarcodeResultScreen(
                         viewModel = viewModel,
                         saveLabel = "Créer le produit",
                         headerMessage =
-                            "Ce produit n'est référencé sur aucune base Open * Facts. Vous pouvez tout de même " +
-                                "le créer : le code-barres sera conservé pour le reconnaître la prochaine fois.",
+                            "Code-barres lu : ${lookup.barcode}. Ce produit n'est référencé sur aucune base " +
+                                "Open * Facts. Vous pouvez tout de même le créer : le code-barres sera conservé pour le reconnaître la prochaine fois.",
                     )
 
                 is BarcodeLookupState.Error ->
