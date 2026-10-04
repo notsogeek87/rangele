@@ -11,14 +11,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
-        // lielugit-updater : GitHub Packages exige un jeton read:packages, lu dans l'environnement
-        // (GPR_USER / GPR_TOKEN) ou ~/.gradle/gradle.properties (gpr.user / gpr.token). Jamais dans le dépôt.
+        // lielugit-updater : dépôt Maven public de la release, versionné dans libs/ (ni jeton ni secret).
         maven {
-            url = uri("https://maven.pkg.github.com/notsogeek87/lielugit-updater")
-            credentials {
-                username = providers.gradleProperty("gpr.user").orNull ?: System.getenv("GPR_USER")
-                password = providers.gradleProperty("gpr.token").orNull ?: System.getenv("GPR_TOKEN")
-            }
+            url = uri("$rootDir/libs/lielugit-maven")
             content { includeGroup("com.lielu") }
         }
     }
