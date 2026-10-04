@@ -26,6 +26,7 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
@@ -55,6 +56,8 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import com.lielu.githubupdater.UpdateError
+import com.lielu.githubupdater.UpdateState
 import com.rangele.inventory.R
 import com.rangele.inventory.data.settings.ThemeMode
 import java.time.Instant
@@ -68,6 +71,7 @@ fun SettingsScreen(
     onBackClick: () -> Unit,
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val updateState by viewModel.updateState.collectAsState()
     val context = LocalContext.current
     var showTimeDialog by remember { mutableStateOf(false) }
     var showRestoreConfirm by remember { mutableStateOf(false) }
@@ -267,6 +271,15 @@ fun SettingsScreen(
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 8.dp),
             )
+
+            HorizontalDivider(modifier = Modifier.padding(vertical = 16.dp))
+
+            UpdateSection(
+                state = updateState,
+                onCheck = viewModel::onCheckUpdateRequested,
+                onInstall = viewModel::onInstallUpdateRequested,
+                onInstallDownloaded = viewModel::onInstallDownloadedRequested,
+            )
         }
     }
 
@@ -304,6 +317,67 @@ fun SettingsScreen(
         )
     }
 }
+
+/** Section « Mise à jour » : dessine l'état exposé par la bibliothèque lielugit-updater. */
+@Composable
+private fun UpdateSection(
+    state: UpdateState,
+    onCheck: () -> Unit,
+    onInstall: (com.lielu.githubupdater.UpdateInfo) -> Unit,
+    onInstallDownloaded: (java.io.File) -> Unit,
+) {
+    Text("Mise à jour", style = MaterialTheme.typography.titleMedium)
+    val busy = state is UpdateState.Checking || state is UpdateState.Downloading
+    val status =
+        when (state) {
+            UpdateState.Idle -> "Vérifie si une nouvelle version est publiée sur GitHub."
+            UpdateState.Checking -> "Recherche de mise à jour…"
+            UpdateState.UpToDate -> "Vous utilisez la dernière version."
+            is UpdateState.UpdateAvailable -> "Version ${state.update.versionName} disponible."
+            is UpdateState.Downloading -> "Téléchargement… ${state.progress.percentage?.let { "$it %" }.orEmpty()}"
+            is UpdateState.Downloaded -> "Mise à jour téléchargée, prête à installer."
+            UpdateState.Installing -> "Installation en cours…"
+            is UpdateState.Error -> updateErrorMessage(state.error)
+        }
+    Text(
+        status,
+        style = MaterialTheme.typography.labelSmall,
+        color =
+            if (state is UpdateState.Error) {
+                MaterialTheme.colorScheme.error
+            } else {
+                MaterialTheme.colorScheme.onSurfaceVariant
+            },
+        modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
+    )
+    if (state is UpdateState.Downloading) {
+        LinearProgressIndicator(
+            progress = { (state.progress.percentage ?: 0) / 100f },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
+        )
+    }
+    Row(verticalAlignment = Alignment.CenterVertically) {
+        when (state) {
+            is UpdateState.UpdateAvailable ->
+                Button(onClick = { onInstall(state.update) }) { Text("Télécharger et installer") }
+            is UpdateState.Downloaded ->
+                Button(onClick = { onInstallDownloaded(state.file) }) { Text("Installer") }
+            else -> Unit
+        }
+        if (state is UpdateState.UpdateAvailable || state is UpdateState.Downloaded) Spacer(Modifier.width(12.dp))
+        OutlinedButton(onClick = onCheck, enabled = !busy) { Text("Rechercher une mise à jour") }
+    }
+}
+
+private fun updateErrorMessage(error: UpdateError): String =
+    when (error) {
+        is UpdateError.NetworkError -> "Réseau indisponible. Réessayez plus tard."
+        is UpdateError.RateLimit -> "Trop de requêtes vers GitHub. Réessayez plus tard."
+        UpdateError.ReleaseNotFound -> "Aucune version publiée trouvée."
+        is UpdateError.ApkNotFound -> "Aucun APK compatible dans la dernière version."
+        UpdateError.InstallationNotAllowed -> "Autorisez l'installation d'applications inconnues pour Yakwa."
+        else -> "La mise à jour a échoué : ${error.message}"
+    }
 
 /** Sélecteur « Système / Clair / Sombre » de l'apparence de l'app, en boutons segmentés. */
 @OptIn(ExperimentalMaterial3Api::class)

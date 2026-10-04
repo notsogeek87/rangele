@@ -2,6 +2,8 @@ package com.rangele.inventory
 
 import android.content.Context
 import androidx.room.Room
+import com.lielu.githubupdater.UpdateConfig
+import com.lielu.githubupdater.UpdateManager
 import com.rangele.inventory.backup.BackupRepository
 import com.rangele.inventory.backup.BackupRepositoryImpl
 import com.rangele.inventory.barcode.OffProductRepository
@@ -95,6 +97,10 @@ class AppContainer(
 
     val offProductRepository: OffProductRepository =
         OffProductRepositoryImpl(openFoodFactsClient, database.offProductCacheDao(), applicationScope)
+
+    /** Mise à jour de l'app depuis les releases GitHub de CE dépôt (pas celui de la bibliothèque). */
+    val updateManager =
+        UpdateManager(appContext, UpdateConfig(githubOwner = "notsogeek87", githubRepository = "rangele"))
 
     private val expirationNotifier = ExpirationNotifier(appContext)
 

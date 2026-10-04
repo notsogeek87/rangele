@@ -142,6 +142,7 @@ dependencies {
     testImplementation(libs.androidx.room.testing)
 
     implementation(libs.androidx.work.runtime.ktx)
+    implementation(libs.lielugit.updater)
 
     implementation(libs.androidx.datastore.preferences)
 

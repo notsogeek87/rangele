@@ -213,6 +213,7 @@ fun RangeleNavHost(
                                     container.settingsRepository,
                                     container.expirationCheckScheduler,
                                     container.backupRepository,
+                                    container.updateManager,
                                 )
                             }
                         },

@@ -4,6 +4,8 @@ import android.content.ContentResolver
 import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.lielu.githubupdater.UpdateInfo
+import com.lielu.githubupdater.UpdateManager
 import com.rangele.inventory.backup.BackupRepository
 import com.rangele.inventory.data.settings.SettingsRepository
 import com.rangele.inventory.data.settings.ThemeMode
@@ -38,7 +40,11 @@ class SettingsViewModel(
     private val settingsRepository: SettingsRepository,
     private val scheduler: ExpirationCheckScheduler,
     private val backupRepository: BackupRepository,
+    private val updateManager: UpdateManager,
 ) : ViewModel() {
+    /** État brut de la bibliothèque ; l'écran le dessine à sa façon. */
+    val updateState = updateManager.state
+
     private val backupState = MutableStateFlow(BackupOpState())
 
     val uiState: StateFlow<SettingsUiState> =
@@ -144,6 +150,35 @@ class SettingsViewModel(
     fun onThresholdModeToggled(enabled: Boolean) {
         viewModelScope.launch {
             settingsRepository.setThresholdModeEnabled(enabled)
+        }
+    }
+
+    fun onCheckUpdateRequested() {
+        // Les erreurs sont aussi publiées dans updateState : on ne garde que l'affichage.
+        viewModelScope.launch { runCatching { updateManager.checkForUpdate(force = true) } }
+    }
+
+    fun onInstallUpdateRequested(update: UpdateInfo) {
+        viewModelScope.launch {
+            runCatching {
+                val apk = updateManager.downloadUpdate(update)
+                if (updateManager.canInstallPackages()) {
+                    updateManager.installUpdate(apk)
+                } else {
+                    updateManager.openInstallPermissionSettings()
+                }
+            }
+        }
+    }
+
+    /** Relance l'installation d'un APK déjà téléchargé (ex. après avoir autorisé les sources inconnues). */
+    fun onInstallDownloadedRequested(apk: java.io.File) {
+        runCatching {
+            if (updateManager.canInstallPackages()) {
+                updateManager.installUpdate(apk)
+            } else {
+                updateManager.openInstallPermissionSettings()
+            }
         }
     }
 }
