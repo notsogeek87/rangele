@@ -14,3 +14,4 @@ local.properties
 /app/release
 /app/debug
 .kotlin/
+/app/schemas
