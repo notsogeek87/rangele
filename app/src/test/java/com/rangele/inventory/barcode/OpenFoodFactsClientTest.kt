@@ -95,4 +95,39 @@ class OpenFoodFactsClientTest {
 
         assertEquals(OffLookupResult.NotFound("123"), result)
     }
+
+    @Test
+    fun `an UPCitemdb item is parsed, flagged, and its trailing Amazon id and category are dropped`() {
+        val body =
+            """
+            {
+              "code": "OK",
+              "total": 1,
+              "items": [{
+                "ean": "3282779051378",
+                "title": "Eau Thermale Avene Gentle Eye Make-up Remover, 4.2 oz. (B002D48R6A)",
+                "brand": "Eau Thermale Avene",
+                "size": "4.22 oz",
+                "category": "Health & Beauty > Personal Care > Cosmetics",
+                "images": ["https://example.com/avene.jpg"]
+              }]
+            }
+            """.trimIndent()
+
+        val result = parseUpcItemDbResponse("3282779051378", body) as OffLookupResult.Found
+
+        assertEquals("Eau Thermale Avene Gentle Eye Make-up Remover, 4.2 oz.", result.product.name)
+        assertEquals("Eau Thermale Avene", result.product.brand)
+        assertEquals("4.22 oz", result.product.packageFormat)
+        assertEquals("https://example.com/avene.jpg", result.product.imageUrl)
+        assertEquals(null, result.product.category)
+        assertTrue(result.product.fromUpcItemDb)
+    }
+
+    @Test
+    fun `an UPCitemdb response without items is not found`() {
+        val body = """{"code": "OK", "total": 0, "offset": 0, "items": []}"""
+
+        assertEquals(OffLookupResult.NotFound("123"), parseUpcItemDbResponse("123", body))
+    }
 }

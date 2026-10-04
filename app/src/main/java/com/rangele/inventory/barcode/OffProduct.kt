@@ -11,6 +11,11 @@ data class OffProduct(
     val imageUrl: String? = null,
     /** Grade Nutri-Score ("a" à "e" en minuscule), null si non renseigné sur Open Food Facts. */
     val nutriscore: String? = null,
+    /**
+     * Vrai si la fiche vient d'UPCitemdb (dernier recours, en anglais) plutôt que d'une base Open * Facts.
+     * Ces fiches ne sont pas mises en cache : le cache Room n'a pas de colonne pour l'origine.
+     */
+    val fromUpcItemDb: Boolean = false,
 )
 
 /** Résultat d'une recherche de produit par code-barres sur Open Food Facts. */

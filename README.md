@@ -65,7 +65,7 @@ correspondant à `main`), donc chaque run publie les deux APK debug, quelle que 
 | Permission | Usage |
 | --- | --- |
 | `CAMERA` (`android:required="false"` sur la feature caméra) | Photo du ticket de courses pour l'OCR (scan de ticket). |
-| `INTERNET` | Uniquement pour interroger [Open Food Facts](https://openfoodfacts.org), puis ses bases sœurs Open Beauty Facts et Open Products Facts si le produit est inconnu (API de lecture publique, sans clé) lors d'un scan de code-barres, afin de préremplir le nom/la catégorie du produit. Aucun autre appel réseau : pas de backend, pas de compte, pas de télémétrie. |
+| `INTERNET` | Uniquement pour interroger [Open Food Facts](https://openfoodfacts.org), puis ses bases sœurs Open Beauty Facts et Open Products Facts, puis en dernier recours [UPCitemdb](https://www.upcitemdb.com) (informations en anglais), si le produit est inconnu (API de lecture publique, sans clé) lors d'un scan de code-barres, afin de préremplir le nom/la catégorie du produit. Aucun autre appel réseau : pas de backend, pas de compte, pas de télémétrie. |
 | `POST_NOTIFICATIONS` (API 33+, demandée à l'exécution) | Notification locale quotidienne de péremption (WorkManager), activable/réglable dans Paramètres. |
 
 ## Versioning & releases

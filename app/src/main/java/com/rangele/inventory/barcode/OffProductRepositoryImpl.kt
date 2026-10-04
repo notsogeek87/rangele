@@ -53,7 +53,9 @@ class OffProductRepositoryImpl(
         when (val result = client.lookupProduct(normalizedBarcode)) {
             is OffLookupResult.Found -> {
                 val product = result.product.copy(barcode = barcode)
-                cacheDao.upsert(product.toCacheEntity(normalizedBarcode, now()))
+                // Les fiches UPCitemdb ne sont pas mises en cache (voir [OffProduct.fromUpcItemDb]) : sinon
+                // le message « données en anglais » disparaîtrait au second scan.
+                if (!product.fromUpcItemDb) cacheDao.upsert(product.toCacheEntity(normalizedBarcode, now()))
                 OffLookupResult.Found(product)
             }
             is OffLookupResult.NotFound -> {

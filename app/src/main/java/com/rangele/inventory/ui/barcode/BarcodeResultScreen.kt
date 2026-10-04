@@ -212,6 +212,16 @@ private fun ProductForm(
                                     .padding(bottom = 8.dp),
                         )
                     }
+                    if (offProduct.fromUpcItemDb) {
+                        Text(
+                            "Produit absent des bases Open Food / Beauty / Products Facts : informations issues " +
+                                "d'UPCitemdb, un catalogue surtout américain, d'où le nom en anglais. " +
+                                "Vous pouvez le corriger ci-dessous.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                    }
                     if (offProduct.brand != null) {
                         Text(offProduct.brand, style = MaterialTheme.typography.bodyMedium)
                     }
