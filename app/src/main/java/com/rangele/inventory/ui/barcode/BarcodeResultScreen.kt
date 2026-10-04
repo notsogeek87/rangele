@@ -85,7 +85,7 @@ fun BarcodeResultScreen(
                     CenteredMessage {
                         CircularProgressIndicator()
                         Text(
-                            "Recherche du produit sur Open Food Facts…",
+                            "Recherche du produit (Open Food / Beauty / Products Facts)…",
                             modifier = Modifier.padding(top = 16.dp),
                             style = MaterialTheme.typography.bodyLarge,
                         )
@@ -109,7 +109,7 @@ fun BarcodeResultScreen(
                         viewModel = viewModel,
                         saveLabel = "Créer le produit",
                         headerMessage =
-                            "Ce produit n'est pas référencé sur Open Food Facts. Vous pouvez tout de même " +
+                            "Ce produit n'est référencé sur aucune base Open * Facts. Vous pouvez tout de même " +
                                 "le créer : le code-barres sera conservé pour le reconnaître la prochaine fois.",
                     )
 
@@ -118,7 +118,7 @@ fun BarcodeResultScreen(
                         viewModel = viewModel,
                         saveLabel = "Créer le produit",
                         headerMessage =
-                            "Impossible de contacter Open Food Facts (vérifiez votre connexion). " +
+                            "Impossible de contacter les bases Open * Facts (vérifiez votre connexion). " +
                                 "Vous pouvez réessayer, ou créer le produit manuellement.",
                         onRetry = viewModel::onRetryLookup,
                     )

@@ -1,6 +1,8 @@
 package com.rangele.inventory.barcode
 
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.withContext
 import org.json.JSONObject
@@ -30,15 +32,23 @@ class OpenFoodFactsClientImpl(
      */
     override suspend fun lookupProduct(barcode: String): OffLookupResult =
         withContext(Dispatchers.IO) {
-            var hadNetworkError = false
-            for (baseUrl in baseUrls) {
-                when (val result = lookupOn(baseUrl, barcode)) {
-                    is OffLookupResult.Found -> return@withContext result
-                    is OffLookupResult.NotFound -> Unit
-                    OffLookupResult.NetworkError -> hadNetworkError = true
+            // Requêtes lancées en parallèle (la latence est celle de la base la plus lente, pas la somme),
+            // mais départagées dans l'ordre de priorité de [baseUrls].
+            coroutineScope {
+                val lookups = baseUrls.map { baseUrl -> async { lookupOn(baseUrl, barcode) } }
+                var hadNetworkError = false
+                for (lookup in lookups) {
+                    when (val result = lookup.await()) {
+                        is OffLookupResult.Found -> {
+                            lookups.forEach { it.cancel() }
+                            return@coroutineScope result
+                        }
+                        is OffLookupResult.NotFound -> Unit
+                        OffLookupResult.NetworkError -> hadNetworkError = true
+                    }
                 }
+                if (hadNetworkError) OffLookupResult.NetworkError else OffLookupResult.NotFound(barcode)
             }
-            if (hadNetworkError) OffLookupResult.NetworkError else OffLookupResult.NotFound(barcode)
         }
 
     private suspend fun lookupOn(
@@ -64,10 +74,14 @@ class OpenFoodFactsClientImpl(
             connection.connectTimeout = TIMEOUT_MILLIS
             connection.readTimeout = TIMEOUT_MILLIS
             connection.setRequestProperty("User-Agent", USER_AGENT)
-            if (connection.responseCode !in 200..299) {
-                throw IOException("Open Food Facts a répondu ${connection.responseCode}")
+            val code = connection.responseCode
+            when {
+                code in 200..299 -> connection.inputStream.bufferedReader().use { it.readText() }
+                // Les bases sœurs répondent 404 (avec un corps JSON `status: 0`) pour un produit inconnu ou
+                // d'un autre type : c'est un « introuvable », pas une panne réseau.
+                code == 404 -> connection.errorStream?.bufferedReader()?.use { it.readText() } ?: NOT_FOUND_BODY
+                else -> throw IOException("Open Food Facts a répondu $code")
             }
-            connection.inputStream.bufferedReader().use { it.readText() }
         } finally {
             connection.disconnect()
         }
@@ -80,6 +94,7 @@ class OpenFoodFactsClientImpl(
                 "https://world.openbeautyfacts.org/api/v2/product/",
                 "https://world.openproductsfacts.org/api/v2/product/",
             )
+        private const val NOT_FOUND_BODY = "{\"status\":0}"
         private const val FIELDS =
             "code,product_name,brands,quantity,categories,image_front_url,image_url,nutriscore_grade"
 
