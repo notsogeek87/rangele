@@ -129,6 +129,21 @@ jobs:
           prerelease: false
           files: artifact/Yakwa-${{ steps.version.outputs.value }}.apk
           body: |
+            ## Comment installer ou mettre à jour Yakwa
+
+            **Yakwa est déjà installé ?** Ouvrez simplement l'app : une fenêtre « Mise à jour disponible »
+            vous guide (toucher « Installer », autoriser Yakwa à installer des applications si Android le
+            demande, puis confirmer « Mettre à jour »).
+
+            **Première installation, ou la fenêtre n'apparaît pas ?**
+            1. Téléchargez `Yakwa-${{ steps.version.outputs.value }}.apk` ci-dessous.
+            2. Ouvrez le fichier téléchargé. Si Android bloque l'installation, touchez « Paramètres » et
+               activez « Autoriser depuis cette source », puis revenez en arrière.
+            3. Touchez « Installer » (ou « Mettre à jour »).
+
+            Vos données sont conservées lors d'une mise à jour.
+
+            ---
             Build automatique depuis le commit `${{ steps.ids.outputs.sha }}` (branche `${{ github.ref_name }}`).
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -56,10 +56,10 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
-import com.lielu.githubupdater.UpdateError
 import com.lielu.githubupdater.UpdateState
 import com.rangele.inventory.R
 import com.rangele.inventory.data.settings.ThemeMode
+import com.rangele.inventory.ui.update.updateErrorMessage
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -370,16 +370,6 @@ private fun UpdateSection(
         OutlinedButton(onClick = onCheck, enabled = !busy) { Text("Rechercher une mise à jour") }
     }
 }
-
-private fun updateErrorMessage(error: UpdateError): String =
-    when (error) {
-        is UpdateError.NetworkError -> "Réseau indisponible. Réessayez plus tard."
-        is UpdateError.RateLimit -> "Trop de requêtes vers GitHub. Réessayez plus tard."
-        UpdateError.ReleaseNotFound -> "Aucune version publiée trouvée."
-        is UpdateError.ApkNotFound -> "Aucun APK compatible dans la dernière version."
-        UpdateError.InstallationNotAllowed -> "Autorisez l'installation d'applications inconnues pour Yakwa."
-        else -> "La mise à jour a échoué : ${error.message}"
-    }
 
 /** Sélecteur « Système / Clair / Sombre » de l'apparence de l'app, en boutons segmentés. */
 @OptIn(ExperimentalMaterial3Api::class)
